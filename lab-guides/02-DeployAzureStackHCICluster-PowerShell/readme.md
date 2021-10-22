@@ -15,11 +15,11 @@
 
 ## About the lab
 
-In this lab you will deploy 4 node Azure Stack HCI cluster using PowerShell. It will demonstrate end-to-end configuration including all details that are not covered by Windows Admin Center deployment.
+In this lab you will deploy 4 node Azure Stack HCI cluster using PowerShell. It will demonstrate end-to-end configuration including all details that are not covered by Windows Admin Center deployment. All steps are the same as you would do in production.
 
 You can pratice this with Dell AX nodes or in Virtual Machines.
 
-Lab is based on [MSLab Azure Stack HCI deployment scenario](https://github.com/microsoft/MSLab/tree/master/Scenarios/AzSHCI%20Deployment)
+Lab is based on [MSLab Azure Stack HCI deployment scenario](https://github.com/microsoft/MSLab/tree/master/Scenarios/AzSHCI%20Deployment). You will find even more details there - it is very useful if you want to go in fine details such as 
 
 ## Prerequisites
 
@@ -205,6 +205,8 @@ Foreach ($Server in $Servers){
 
 This lab assumes you have 2 or more network adapters converged. It means traffic for Management,Storage and VMs is using the same physical adapters and is splitted in logic defined in vSwitch.
 
+![](https://docs.microsoft.com/en-us/azure-stack/hci/deploy/media/network-atc/network-atc-2-full-converge.png)
+
 Best practices are covered in Microsoft Documentation http://aka.ms/ConvergedRDMA 
 
 You can also review deep dive into networking [MSLab scenario](https://github.com/microsoft/MSLab/tree/master/Scenarios/S2D%20and%20Networks%20deep%20dive) for more PowerShell examples.
@@ -332,7 +334,112 @@ foreach ($Server in $Servers){
 
 **8.** Validate IP Addresses
 
-```PowerShell
+> As you can see, there are two subnets. Each odd and even adapter has it's own subnet.
 
+```PowerShell
+ Get-NetIPAddress -CimSession $Servers -InterfaceAlias vEthernet* -AddressFamily IPv4 |Sort-Object IPAddress | Select-Object IPAddress,InterfaceAlias,PSComputerName
+ 
 ```
 
+![](./media/powershell10.png)
+
+**9.** Configure VLANs.
+
+> It is best practice to configure storage NICs to use VLANs as it is needed for QoS to work correctly.
+
+```PowerShell
+$StorVLAN1=1
+$StorVLAN2=2
+
+#configure Odds and Evens for VLAN1 and VLAN2
+foreach ($Server in $Servers){
+    $NetAdapters=Get-VMNetworkAdapter -CimSession $server -ManagementOS -Name *SMB* | Sort-Object Name
+    $i=1
+    foreach ($NetAdapter in $NetAdapters){
+        if (($i % 2) -eq 1){
+            Set-VMNetworkAdapterVlan -VMNetworkAdapterName $NetAdapter.Name -VlanId $StorVLAN1 -Access -ManagementOS -CimSession $Server
+            $i++
+        }else{
+            Set-VMNetworkAdapterVlan -VMNetworkAdapterName $NetAdapter.Name -VlanId $StorVLAN2 -Access -ManagementOS -CimSession $Server
+            $i++
+        }
+    }
+}
+#Restart each host vNIC adapter so that the Vlan is active.
+Get-NetAdapter -CimSession $Servers -Name "vEthernet (SMB*)" | Restart-NetAdapter
+ 
+```
+
+**10.** Validate if VLANs are configured
+
+```PowerShell
+#validate if VLANs were set
+Get-VMNetworkAdapterVlan -CimSession $Servers -ManagementOS | Select-Object ComputerName,ParentAdapter.Name,OperationMode,AccessVlanId
+ 
+```
+
+![](./media/powershell11.png)
+
+
+**11.** Enable RDMA on vNICs and validate
+
+```PowerShell
+#Enable RDMA on the host vNIC adapters
+Enable-NetAdapterRDMA -Name "vEthernet (SMB*)" -CimSession $Servers
+#verify RDMA settings
+Get-NetAdapterRdma -CimSession $servers | Sort-Object -Property Systemname | Format-Table systemname,interfacedescription,name,enabled -AutoSize -GroupBy Systemname
+ 
+```
+
+Result - VMs (notice RDMA is disabled on "physical adapters" - Microsoft Hyper-V Network Adatper)
+
+![](./media/powershell12.png)
+
+Result - real hardware
+
+![](./media/powershell13.png)
+
+**12.** Configure Datacenter Bridging (QoS)
+
+> Following script is configuring best practices as recommended by Microsoft in Network ATC guide https://docs.microsoft.com/en-us/azure-stack/hci/deploy/network-atc#default-data-center-bridging-dcb-configurationw
+
+```PowerShell
+#Install DCB
+Invoke-Command -ComputerName $Servers -ScriptBlock {Install-WindowsFeature -Name "Data-Center-Bridging"} 
+
+##Configure QoS
+New-NetQosPolicy "SMB"       -NetDirectPortMatchCondition 445 -PriorityValue8021Action 3 -CimSession $servers
+New-NetQosPolicy "ClusterHB" -Cluster                         -PriorityValue8021Action 7 -CimSession $servers
+New-NetQosPolicy "Default"   -Default                         -PriorityValue8021Action 0 -CimSession $servers
+
+#Turn on Flow Control for SMB
+Invoke-Command -ComputerName $servers -ScriptBlock {Enable-NetQosFlowControl -Priority 3}
+
+#Disable flow control for other traffic than 3 (pause frames should go only from prio 3)
+Invoke-Command -ComputerName $servers -ScriptBlock {Disable-NetQosFlowControl -Priority 0,1,2,4,5,6,7}
+
+#Disable Data Center bridging exchange (disable accept data center bridging (DCB) configurations from a remote device via the DCBX protocol, which is specified in the IEEE data center bridging (DCB) standard.)
+Invoke-Command -ComputerName $servers -ScriptBlock {Set-NetQosDcbxSetting -willing $false -confirm:$false}
+
+#Configure IeeePriorityTag
+#IeePriorityTag needs to be On if you want tag your nonRDMA traffic for QoS. Can be off if you use adapters that pass vSwitch (both SR-IOV and RDMA bypasses vSwitch)
+Invoke-Command -ComputerName $servers -ScriptBlock {Set-VMNetworkAdapter -ManagementOS -Name "SMB*" -IeeePriorityTag on}
+
+#Apply policy to the target adapters.  The target adapters are adapters connected to vSwitch
+Invoke-Command -ComputerName $servers -ScriptBlock {Enable-NetAdapterQos -InterfaceDescription (Get-VMSwitch).NetAdapterInterfaceDescriptions}
+
+#Create a Traffic class and give SMB Direct 50% of the bandwidth minimum. The name of the class will be "SMB".
+#This value needs to match physical switch configuration. Value might vary based on your needs.
+#If connected directly (in 2 node configuration) skip this step.
+Invoke-Command -ComputerName $servers -ScriptBlock {New-NetQosTrafficClass "SMB"       -Priority 3 -BandwidthPercentage 50 -Algorithm ETS}
+Invoke-Command -ComputerName $servers -ScriptBlock {New-NetQosTrafficClass "ClusterHB" -Priority 7 -BandwidthPercentage 1 -Algorithm ETS}
+ 
+```
+
+Result - VMs. You can notice error configuring NetAdapter QOS as Hyper-V Network adapter does not support it.
+
+![](./media/powershell14.png)
+
+Result - Physical Servers
+
+![](./media/powershell15.png)

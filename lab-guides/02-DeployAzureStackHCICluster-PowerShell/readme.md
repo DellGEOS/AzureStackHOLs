@@ -10,6 +10,8 @@
     - [Task02 - Perform Windows Update](#task02---perform-windows-update)
     - [Task03 - Configure basic settings on servers](#task03---configure-basic-settings-on-servers)
     - [Task04 - Configure Networking](#task04---configure-networking)
+    - [Task05 - Validate Networking](#task05---validate-networking)
+    - [Task06 - Create and configure Cluster](#task06---create-and-configure-cluster)
 
 <!-- /TOC -->
 
@@ -132,7 +134,7 @@ Invoke-Command -ComputerName $servers -ScriptBlock {
 
 ```PowerShell
 #Restart servers
- Restart-Computer -ComputerName $Servers -Protocol WSMan -Wait -For PowerShell -Force
+Restart-Computer -ComputerName $Servers -Protocol WSMan -Wait -For PowerShell -Force
 
 #check OS Build Number
 $RegistryPath = 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\'
@@ -148,6 +150,8 @@ $ComputersInfo | Select-Object PSComputerName,CurrentBuildNumber,UBR
 ## Task03 - Configure basic settings on servers
 
 **1.** Run following PowerShell script to configure Memory Dump settings and High Performance power plan.
+
+> note: following script will configure High Performance power plan only on Physical Hardware (does not make sense on VMs)
 
 ```PowerShell
 #Define servers as variable
@@ -174,7 +178,7 @@ Invoke-Command -ComputerName $servers -ScriptBlock {
 
 **2.** Run following script to install features and restart computers
 
-> You can notice, that Hyper-V is installed with command "Enable-WindowsOptionalFeature". This will use DISM to push feature even it is not supported by hardware (in case it is nested, without exposing virtualization extensions)
+> note: You can notice, that Hyper-V is installed with command "Enable-WindowsOptionalFeature". This will use DISM to push feature even it is not supported by hardware (in case it is nested, without exposing virtualization extensions)
 
 ```PowerShell
 #install Hyper-V using DISM if Install-WindowsFeature fails (if nested virtualization is not enabled install-windowsfeature fails)
@@ -222,11 +226,11 @@ Get-Netadapter -CimSession $Servers | Where-Object Status -ne "Up" | Disable-Net
  
 ```
 
-Before
+Before (physical server)
 
 ![](./media/servermanager01.png)
 
-After
+After (physical server)
 
 ![](./media/servermanager02.png)
 
@@ -235,6 +239,8 @@ After
 **2.** First let's check if all fastest adapters support SR-IOV. If not, you can enable it in BIOS (not in iDRAC, has to be configured at interface level). If environment is virtual, script will return error as SRIOV is not available at all.
 
 > to learn more about SR-IOV here: https://docs.microsoft.com/en-us/windows-hardware/drivers/network/overview-of-single-root-i-o-virtualization--sr-iov- and here https://www.youtube.com/watch?v=w-NBulzW_zE
+
+> output will be empty in virtual environment
 
 ```PowerShell
 $FastestLinkSpeed=(get-netadapter -cimsession $Servers | Where-Object Status -eq Up).Speed | Sort-Object -Descending | Select-Object -First 1
@@ -370,34 +376,34 @@ Get-NetAdapter -CimSession $Servers -Name "vEthernet (SMB*)" | Restart-NetAdapte
  
 ```
 
-**10.** Validate if VLANs are configured
-
-```PowerShell
-#validate if VLANs were set
-Get-VMNetworkAdapterVlan -CimSession $Servers -ManagementOS | Select-Object ComputerName,ParentAdapter.Name,OperationMode,AccessVlanId
- 
-```
-
-![](./media/powershell11.png)
-
-
-**11.** Enable RDMA on vNICs and validate
+**10.** Enable RDMA on vNICs
 
 ```PowerShell
 #Enable RDMA on the host vNIC adapters
 Enable-NetAdapterRDMA -Name "vEthernet (SMB*)" -CimSession $Servers
-#verify RDMA settings
-Get-NetAdapterRdma -CimSession $servers | Sort-Object -Property Systemname | Format-Table systemname,interfacedescription,name,enabled -AutoSize -GroupBy Systemname
  
 ```
 
-Result - VMs (notice RDMA is disabled on "physical adapters" - Microsoft Hyper-V Network Adatper)
+**11.** Configure vNICs to pNICs mapping
 
-![](./media/powershell12.png)
+vNICs to pNICs mapping is important because of using both physical adapters. Without this, storage traffic could end up on one physical interface only.
 
-Result - real hardware
-
-![](./media/powershell13.png)
+```PowerShell
+#Associate each of the vNICs configured for RDMA to a physical adapter that is up and is not virtual (to be sure that each RDMA enabled ManagementOS vNIC is mapped to separate RDMA pNIC)
+Invoke-Command -ComputerName $servers -ScriptBlock {
+    #grab adapter names
+    $physicaladapternames=(get-vmswitch $using:vSwitchName).NetAdapterInterfaceDescriptions
+    #map pNIC and vNICs
+    $vmNetAdapters=Get-VMNetworkAdapter -Name "SMB*" -ManagementOS
+    $i=0
+    foreach ($vmNetAdapter in $vmNetAdapters){
+        $TwoDigitNumber="{0:D2}" -f ($i+1)
+        Set-VMNetworkAdapterTeamMapping -VMNetworkAdapterName "SMB$TwoDigitNumber" -ManagementOS -PhysicalNetAdapterName (get-netadapter -InterfaceDescription $physicaladapternames[$i]).name
+        $i++
+    }
+}
+ 
+```
 
 **12.** Configure Datacenter Bridging (QoS)
 
@@ -443,3 +449,140 @@ Result - VMs. You can notice error configuring NetAdapter QOS as Hyper-V Network
 Result - Physical Servers
 
 ![](./media/powershell15.png)
+
+**13.** *If iWARP is used*, then Firewall Rule that allows iWARP traffic needs to be enabled
+
+```PowerShell
+Enable-NetFirewallRule -Name "FPSSMBD-iWARP-In-TCP" -CimSession $servers
+ 
+```
+
+## Task05 - Validate Networking
+
+**1.** Check Virtual Switches and virtual NICs
+
+```PowerShell
+#validate vSwitch
+Get-VMSwitch -CimSession $servers
+#validate vNICs
+Get-VMNetworkAdapter -CimSession $servers -ManagementOS
+ 
+```
+
+![](./media/powershell16.png)
+
+**2.** Check vNICs to pNICs mapping
+
+```PowerShell
+#validate vNICs to pNICs mapping
+Get-VMNetworkAdapterTeamMapping -CimSession $servers -ManagementOS | Format-Table ComputerName,NetAdapterName,ParentAdapter
+ 
+```
+
+Result - VMs
+
+![](./media/powershell17.png)
+
+Result - Physical Servers
+
+![](./media/powershell18.png)
+
+**3.** Check JumboFrames setting
+
+> note: in this lab was default value used.
+
+```PowerShell
+#validate JumboFrames setting
+Get-NetAdapterAdvancedProperty -CimSession $servers -DisplayName "Jumbo Packet"
+ 
+```
+
+Result - VMs
+
+![](./media/powershell19.png)
+
+Result - Physical Servers
+
+![](./media/powershell20.png)
+
+
+**4.** Check RDMA Settings
+
+```PowerShell
+#verify RDMA settings
+Get-NetAdapterRdma -CimSession $servers | Sort-Object -Property Systemname | Format-Table systemname,interfacedescription,name,enabled -AutoSize -GroupBy Systemname
+
+```
+
+Result - VMs (notice RDMA is disabled on "physical adapters" - Microsoft Hyper-V Network Adatper)
+
+![](./media/powershell12.png)
+
+Result - real hardware
+
+![](./media/powershell13.png)
+
+**5.** Check VLANs
+
+```PowerShell
+#validate if VLANs were set
+Get-VMNetworkAdapterVlan -CimSession $Servers -ManagementOS
+```
+
+![](./media/powershell11.png)
+
+**6.** Check IP Config
+
+```PowerShell
+#verify ip config 
+Get-NetIPAddress -CimSession $servers -InterfaceAlias vEthernet* -AddressFamily IPv4 | Sort-Object -Property PSComputerName | Format-Table PSComputerName,interfacealias,ipaddress -AutoSize -GroupBy pscomputername
+ 
+```
+
+![](./media/powershell21.png)
+
+
+**7.** Check DCBX Settings
+
+```PowerShell
+#Validate DCBX setting
+Invoke-Command -ComputerName $servers -ScriptBlock {Get-NetQosDcbxSetting} | Sort-Object PSComputerName | Format-Table Willing,PSComputerName
+
+```
+
+![](./media/powershell22.png)
+
+**7.** Check QoS Policy
+
+> note: there will be no result in Virtual Machines
+
+```PowerShell
+#validate policy (no result since it's not available in VM)
+Invoke-Command -ComputerName $servers -ScriptBlock {Get-NetAdapterQos | Where-Object enabled -eq true} | Sort-Object PSComputerName
+ 
+```
+
+![](./media/powershell23.png)
+
+**8.** Check flow control settings
+
+```PowerShell
+#validate flow control setting
+Invoke-Command -ComputerName $servers -ScriptBlock {Get-NetQosFlowControl} | Sort-Object  -Property PSComputername | Format-Table PSComputerName,Priority,Enabled -GroupBy PSComputerName
+ 
+```
+
+![](./media/powershell24.png)
+
+
+**9.** Check QoS Traffic Classes
+
+```PowerShell
+#validate QoS Traffic Classes
+Invoke-Command -ComputerName $servers -ScriptBlock {Get-NetQosTrafficClass} |Sort-Object PSComputerName |Select-Object PSComputerName,Name,PriorityFriendly,Bandwidth
+ 
+```
+
+![](./media/powershell25.png)
+
+## Task06 - Create and configure Cluster

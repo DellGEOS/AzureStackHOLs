@@ -499,11 +499,11 @@ Get-NetAdapterAdvancedProperty -CimSession $servers -DisplayName "Jumbo Packet"
 
 Result - VMs
 
-![](./media/powershell17.png)
+![](./media/powershell19.png)
 
 Result - Physical Servers
 
-![](./media/powershell18.png)
+![](./media/powershell20.png)
 
 
 **4.** Check RDMA Settings

@@ -12,6 +12,7 @@
     - [Task04 - Configure Networking](#task04---configure-networking)
     - [Task05 - Validate Networking](#task05---validate-networking)
     - [Task06 - Create and configure Cluster](#task06---create-and-configure-cluster)
+    - [Task07 - Create and configure Cluster](#task07---create-and-configure-cluster)
 
 <!-- /TOC -->
 
@@ -586,3 +587,168 @@ Invoke-Command -ComputerName $servers -ScriptBlock {Get-NetQosTrafficClass} |Sor
 ![](./media/powershell25.png)
 
 ## Task06 - Create and configure Cluster
+
+**1.** Test if cluster is ready to be enabled and create cluster
+
+> note: the PowerShell code below shows three examples how to create cluster. The most traditional way is to create cluster with static IP Address. The modern way is to use Distributed Domain Name. This way, there is no extra IP Needed and in DNS are each node IP addresses added to cluster name record.
+
+> note: physical hardware - AX Nodes do have USB network adapters that are used by OpenManage Windows Admin Center extension to collect data from each node
+
+```PowerShell
+$ClusterName="AzSHCI-Cluster"
+$Servers="AzSHCI1","AzSHCI2","AzSHCI3","AzSHCI4"
+$ClusterIP="10.0.0.111"
+#$ClusterName="Ax6515-Cluster"
+#$Servers="AxNode1","AxNode2"
+
+#Disable USB NIC used by iDRAC to communicate to host just for test-cluster (only applies to physical servers)
+$USBNics=get-netadapter -CimSession $Servers -InterfaceDescription "Remote NDIS Compatible Device" -ErrorAction Ignore
+if ($USBNics){
+    Disable-NetAdapter -CimSession $Servers -InterfaceDescription "Remote NDIS Compatible Device" -Confirm:0
+}
+
+#Test cluster first
+Test-Cluster -Node $servers -Include "Storage Spaces Direct","Inventory","Network","System Configuration","Hyper-V Configuration"
+
+#Traditional Cluster with Static IP
+New-Cluster -Name $ClusterName -Node $servers -StaticAddress $ClusterIP
+#Cluster with IP from DHCP
+#New-Cluster -Name $ClusterName -Node $servers
+#Cluster with Distributed Domain Name
+#New-Cluster -Name $ClusterName -Node $servers -ManagementPointNetworkType "Distributed"
+
+#Enable USB NICs again
+if ($USBNics){
+    Enable-NetAdapter -CimSession $Servers -InterfaceDescription "Remote NDIS Compatible Device" -Confirm:0
+}
+ 
+```
+
+* [Validation report - VMs](./media/ValidatinReportVMs.htm)
+
+* [Validation report -Physical Servers](./media/ValidationReportAX6515.htm)
+
+**2.** Configure witness
+
+There are two options for witness - file share witness or Cloud Witness. Below you will find an example for both.
+
+**2.a** File Share Witness
+
+```PowerShell
+#Configure Witness
+    $WitnessServer="DC"
+    #Create new directory
+        $WitnessName=$Clustername+"Witness"
+        Invoke-Command -ComputerName $WitnessServer -ScriptBlock {new-item -Path c:\Shares -Name $using:WitnessName -ItemType Directory}
+        $accounts=@()
+        $accounts+="corp\$ClusterName$"
+        $accounts+="corp\Domain Admins"
+        New-SmbShare -Name $WitnessName -Path "c:\Shares\$WitnessName" -FullAccess $accounts -CimSession $WitnessServer
+    #Set NTFS permissions 
+        Invoke-Command -ComputerName $WitnessServer -ScriptBlock {(Get-SmbShare $using:WitnessName).PresetPathAcl | Set-Acl}
+    #Set Quorum
+        Set-ClusterQuorum -Cluster $ClusterName -FileShareWitness "\\$WitnessServer\$WitnessName"
+ 
+```
+
+![](./media/cluadmin01.png)
+
+**2.b** Configure Cloud Witness
+
+```PowerShell
+$ResourceGroupName="AzSHCICloudWitness"
+$StorageAccountName="azshcicloudwitness$(Get-Random -Minimum 100000 -Maximum 999999)"
+
+#make sure PowerShell modules are present
+Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
+$ModuleNames="Az.Accounts","Az.Resources","Az.Storage"
+foreach ($ModuleName in $ModuleNames){
+    Install-Module -Name $ModuleName -Force
+}
+
+#login to Azure
+if (-not (Get-AzContext)){
+    Connect-AzAccount -UseDeviceAuthentication
+}
+#select context if more available
+$context=Get-AzContext -ListAvailable
+if (($context).count -gt 1){
+    $context | Out-GridView -OutputMode Single | Set-AzContext
+}
+#Create resource group
+$Location=Get-AzLocation | Where-Object Providers -Contains "Microsoft.Storage" | Out-GridView -OutputMode Single
+#create resource group first
+if (-not(Get-AzResourceGroup -Name $ResourceGroupName -ErrorAction Ignore)){
+    New-AzResourceGroup -Name $ResourceGroupName -Location $location.Location
+}
+#create Storage Account
+If (-not(Get-AzStorageAccountKey -Name $StorageAccountName -ResourceGroupName $ResourceGroupName -ErrorAction Ignore)){
+    New-AzStorageAccount -ResourceGroupName $ResourceGroupName -Name $StorageAccountName -SkuName Standard_LRS -Location $location.location -Kind StorageV2 -AccessTier Cool 
+}
+$StorageAccountAccessKey=(Get-AzStorageAccountKey -Name $StorageAccountName -ResourceGroupName $ResourceGroupName | Select-Object -First 1).Value
+
+#Configure Witness
+Set-ClusterQuorum -Cluster $ClusterName -CloudWitness -AccountName $StorageAccountName -AccessKey $StorageAccountAccessKey -Endpoint "core.windows.net"
+ 
+```
+
+![](./media/cluadmin02.png)
+
+**3.** Configure cluster networks
+
+```PowerShell
+$Stornet1="172.16.1."
+$Stornet2="172.16.2."
+(Get-ClusterNetwork -Cluster $clustername | Where-Object Address -eq $StorNet1"0").Name="SMB01"
+(Get-ClusterNetwork -Cluster $clustername | Where-Object Address -eq $StorNet2"0").Name="SMB02"¨
+
+#Rename Management Network
+(Get-ClusterNetwork -Cluster $clustername | Where-Object Role -eq "ClusterAndClient").Name="Management"
+
+#Rename and Configure USB NICs
+$USBNics=get-netadapter -CimSession $Servers -InterfaceDescription "Remote NDIS Compatible Device" -ErrorAction Ignore
+if ($USBNics){
+    $Network=(Get-ClusterNetworkInterface -Cluster $ClusterName | Where-Object Adapter -eq "Remote NDIS Compatible Device").Network | Select-Object -Unique
+    $Network.Name="iDRAC"
+    $Network.Role="none"
+}
+ 
+```
+
+Before (physical server)
+
+![](./media/cluadmin03.png)
+
+After (physical server)
+
+![](./media/cluadmin04.png)
+
+**4.** Configure Live Migration settings
+
+Following Script will configure cluster network for Live Migration, configure this network to use SMB and will configure live migration limits - so live migration will not consume entire East-West bandwidth. And
+
+```PowerShell
+#configure Live Migration 
+Get-ClusterResourceType -Cluster $clustername -Name "Virtual Machine" | Set-ClusterParameter -Name MigrationExcludeNetworks -Value ([String]::Join(";",(Get-ClusterNetwork -Cluster $clustername | Where-Object {$_.Role -ne "Cluster"}).ID))
+Set-VMHost -VirtualMachineMigrationPerformanceOption SMB -cimsession $servers
+
+#Configure SMB Bandwidth Limits for Live Migration https://techcommunity.microsoft.com/t5/Failover-Clustering/Optimizing-Hyper-V-Live-Migrations-on-an-Hyperconverged/ba-p/396609
+    #install feature
+    Invoke-Command -ComputerName $servers -ScriptBlock {Install-WindowsFeature -Name "FS-SMBBW"}
+    #Calculate 40% of capacity of NICs in vSwitch (considering 2 NICs, if 1 fails, it will not consume all bandwith, therefore 40%)
+    $Adapters=(Get-VMSwitch -CimSession $Servers[0]).NetAdapterInterfaceDescriptions
+    $BytesPerSecond=((Get-NetAdapter -CimSession $Servers[0] -InterfaceDescription $adapters).TransmitLinkSpeed | Measure-Object -Sum).Sum/8
+    Set-SmbBandwidthLimit -Category LiveMigration -BytesPerSecond ($BytesPerSecond*0.4) -CimSession $Servers
+ 
+```
+
+Before
+
+![](./media/cluadmin05.png)
+
+After
+
+![](./media/cluadmin06.png)
+
+## Task07 - Create and configure Cluster
+

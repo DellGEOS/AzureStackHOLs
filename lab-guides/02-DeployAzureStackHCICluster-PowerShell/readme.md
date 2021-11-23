@@ -12,6 +12,9 @@
     - [Task04 - Configure Networking](#task04---configure-networking)
     - [Task05 - Validate Networking](#task05---validate-networking)
     - [Task06 - Create and configure Cluster](#task06---create-and-configure-cluster)
+    - [Task08 - Enable Storage Spaces Direct and create Volumes](#task08---enable-storage-spaces-direct-and-create-volumes)
+    - [Task09 - Register Azure Stack HCI cluster to Azure](#task09---register-azure-stack-hci-cluster-to-azure)
+    - [Task10 - Install Windows Admin Center and explore Azure Stack HCI Cluster](#task10---install-windows-admin-center-and-explore-azure-stack-hci-cluster)
 
 <!-- /TOC -->
 
@@ -489,7 +492,7 @@ Result - Physical Servers
 
 **3.** Check JumboFrames setting
 
-> note: in this lab was default value used.
+> note: in this lab was default value used (1514).
 
 ```PowerShell
 #validate JumboFrames setting
@@ -511,7 +514,7 @@ Result - Physical Servers
 ```PowerShell
 #verify RDMA settings
 Get-NetAdapterRdma -CimSession $servers | Sort-Object -Property Systemname | Format-Table systemname,interfacedescription,name,enabled -AutoSize -GroupBy Systemname
-
+ 
 ```
 
 Result - VMs (notice RDMA is disabled on "physical adapters" - Microsoft Hyper-V Network Adatper)
@@ -527,6 +530,7 @@ Result - real hardware
 ```PowerShell
 #validate if VLANs were set
 Get-VMNetworkAdapterVlan -CimSession $Servers -ManagementOS
+ 
 ```
 
 ![](./media/powershell11.png)
@@ -547,7 +551,7 @@ Get-NetIPAddress -CimSession $servers -InterfaceAlias vEthernet* -AddressFamily 
 ```PowerShell
 #Validate DCBX setting
 Invoke-Command -ComputerName $servers -ScriptBlock {Get-NetQosDcbxSetting} | Sort-Object PSComputerName | Format-Table Willing,PSComputerName
-
+ 
 ```
 
 ![](./media/powershell22.png)
@@ -557,7 +561,7 @@ Invoke-Command -ComputerName $servers -ScriptBlock {Get-NetQosDcbxSetting} | Sor
 > note: there will be no result in Virtual Machines
 
 ```PowerShell
-#validate policy (no result since it's not available in VM)
+#validate policy (no result in VMs since it's not available there)
 Invoke-Command -ComputerName $servers -ScriptBlock {Get-NetAdapterQos | Where-Object enabled -eq true} | Sort-Object PSComputerName
  
 ```
@@ -586,3 +590,546 @@ Invoke-Command -ComputerName $servers -ScriptBlock {Get-NetQosTrafficClass} |Sor
 ![](./media/powershell25.png)
 
 ## Task06 - Create and configure Cluster
+
+**1.** Test if cluster is ready to be enabled and create cluster
+
+> note: the PowerShell code below shows three examples how to create cluster. The most traditional way is to create cluster with static IP Address. The modern way is to use Distributed Domain Name. This way, there is no extra IP Needed and in DNS are each node IP addresses added to cluster name record.
+
+> note: physical hardware - AX Nodes do have USB network adapters that are used by OpenManage Windows Admin Center extension to collect data from each node
+
+```PowerShell
+$ClusterName="AzSHCI-Cluster"
+$Servers="AzSHCI1","AzSHCI2","AzSHCI3","AzSHCI4"
+$ClusterIP="10.0.0.111"
+#$ClusterName="Ax6515-Cluster"
+#$Servers="AxNode1","AxNode2"
+
+#Disable USB NIC used by iDRAC to communicate to host just for test-cluster (only applies to physical servers)
+$USBNics=get-netadapter -CimSession $Servers -InterfaceDescription "Remote NDIS Compatible Device" -ErrorAction Ignore
+if ($USBNics){
+    Disable-NetAdapter -CimSession $Servers -InterfaceDescription "Remote NDIS Compatible Device" -Confirm:0
+}
+
+#Test cluster first
+Test-Cluster -Node $servers -Include "Storage Spaces Direct","Inventory","Network","System Configuration","Hyper-V Configuration"
+
+#Traditional Cluster with Static IP
+New-Cluster -Name $ClusterName -Node $servers -StaticAddress $ClusterIP
+#Cluster with IP from DHCP
+#New-Cluster -Name $ClusterName -Node $servers
+#Cluster with Distributed Domain Name
+#New-Cluster -Name $ClusterName -Node $servers -ManagementPointNetworkType "Distributed"
+
+#Enable USB NICs again
+if ($USBNics){
+    Enable-NetAdapter -CimSession $Servers -InterfaceDescription "Remote NDIS Compatible Device" -Confirm:0
+}
+ 
+```
+
+* [Validation report - VMs](./media/ValidatinReportVMs.htm)
+
+* [Validation report -Physical Servers](./media/ValidationReportAX6515.htm)
+
+**2.** Configure witness
+
+There are two options for witness - file share witness or Cloud Witness. Below you will find an example for both.
+
+**2.a** File Share Witness
+
+```PowerShell
+#Configure Witness
+    $WitnessServer="DC"
+    #Create new directory
+        $WitnessName=$Clustername+"Witness"
+        Invoke-Command -ComputerName $WitnessServer -ScriptBlock {new-item -Path c:\Shares -Name $using:WitnessName -ItemType Directory}
+        $accounts=@()
+        $accounts+="corp\$ClusterName$"
+        $accounts+="corp\Domain Admins"
+        New-SmbShare -Name $WitnessName -Path "c:\Shares\$WitnessName" -FullAccess $accounts -CimSession $WitnessServer
+    #Set NTFS permissions 
+        Invoke-Command -ComputerName $WitnessServer -ScriptBlock {(Get-SmbShare $using:WitnessName).PresetPathAcl | Set-Acl}
+    #Set Quorum
+        Set-ClusterQuorum -Cluster $ClusterName -FileShareWitness "\\$WitnessServer\$WitnessName"
+ 
+```
+
+![](./media/cluadmin01.png)
+
+**2.b** or Configure Cloud Witness
+
+```PowerShell
+$ResourceGroupName="AzSHCICloudWitness"
+$StorageAccountName="azshcicloudwitness$(Get-Random -Minimum 100000 -Maximum 999999)"
+
+#make sure PowerShell modules are present
+Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
+$ModuleNames="Az.Accounts","Az.Resources","Az.Storage"
+foreach ($ModuleName in $ModuleNames){
+    Install-Module -Name $ModuleName -Force
+}
+
+#login to Azure
+if (-not (Get-AzContext)){
+    Connect-AzAccount -UseDeviceAuthentication
+}
+#select context if more available
+$context=Get-AzContext -ListAvailable
+if (($context).count -gt 1){
+    $context | Out-GridView -OutputMode Single | Set-AzContext
+}
+#Create resource group
+$Location=Get-AzLocation | Where-Object Providers -Contains "Microsoft.Storage" | Out-GridView -OutputMode Single
+#create resource group first
+if (-not(Get-AzResourceGroup -Name $ResourceGroupName -ErrorAction Ignore)){
+    New-AzResourceGroup -Name $ResourceGroupName -Location $location.Location
+}
+#create Storage Account
+If (-not(Get-AzStorageAccountKey -Name $StorageAccountName -ResourceGroupName $ResourceGroupName -ErrorAction Ignore)){
+    New-AzStorageAccount -ResourceGroupName $ResourceGroupName -Name $StorageAccountName -SkuName Standard_LRS -Location $location.location -Kind StorageV2 -AccessTier Cool 
+}
+$StorageAccountAccessKey=(Get-AzStorageAccountKey -Name $StorageAccountName -ResourceGroupName $ResourceGroupName | Select-Object -First 1).Value
+
+#Configure Witness
+Set-ClusterQuorum -Cluster $ClusterName -CloudWitness -AccountName $StorageAccountName -AccessKey $StorageAccountAccessKey -Endpoint "core.windows.net"
+ 
+```
+
+![](./media/cluadmin02.png)
+
+**3.** Configure cluster networks
+
+```PowerShell
+$Stornet1="172.16.1."
+$Stornet2="172.16.2."
+(Get-ClusterNetwork -Cluster $clustername | Where-Object Address -eq $StorNet1"0").Name="SMB01"
+(Get-ClusterNetwork -Cluster $clustername | Where-Object Address -eq $StorNet2"0").Name="SMB02"¨
+
+#Rename Management Network
+(Get-ClusterNetwork -Cluster $clustername | Where-Object Role -eq "ClusterAndClient").Name="Management"
+
+#Rename and Configure USB NICs
+$USBNics=get-netadapter -CimSession $Servers -InterfaceDescription "Remote NDIS Compatible Device" -ErrorAction Ignore
+if ($USBNics){
+    $Network=(Get-ClusterNetworkInterface -Cluster $ClusterName | Where-Object Adapter -eq "Remote NDIS Compatible Device").Network | Select-Object -Unique
+    $Network.Name="iDRAC"
+    $Network.Role="none"
+}
+ 
+```
+
+Before (physical server)
+
+![](./media/cluadmin03.png)
+
+After (physical server)
+
+![](./media/cluadmin04.png)
+
+**4.** Configure Live Migration settings
+
+Following Script will configure cluster network for Live Migration, configure this network to use SMB and will configure live migration limits - so live migration will not consume entire East-West bandwidth. And
+
+```PowerShell
+#configure Live Migration 
+Get-ClusterResourceType -Cluster $clustername -Name "Virtual Machine" | Set-ClusterParameter -Name MigrationExcludeNetworks -Value ([String]::Join(";",(Get-ClusterNetwork -Cluster $clustername | Where-Object {$_.Role -ne "Cluster"}).ID))
+Set-VMHost -VirtualMachineMigrationPerformanceOption SMB -cimsession $servers
+
+#Configure SMB Bandwidth Limits for Live Migration https://techcommunity.microsoft.com/t5/Failover-Clustering/Optimizing-Hyper-V-Live-Migrations-on-an-Hyperconverged/ba-p/396609
+    #install feature
+    Invoke-Command -ComputerName $servers -ScriptBlock {Install-WindowsFeature -Name "FS-SMBBW"}
+    #Calculate 40% of capacity of NICs in vSwitch (considering 2 NICs, if 1 fails, it will not consume all bandwith, therefore 40%)
+    $Adapters=(Get-VMSwitch -CimSession $Servers[0]).NetAdapterInterfaceDescriptions
+    $BytesPerSecond=((Get-NetAdapter -CimSession $Servers[0] -InterfaceDescription $adapters).TransmitLinkSpeed | Measure-Object -Sum).Sum/8
+    Set-SmbBandwidthLimit -Category LiveMigration -BytesPerSecond ($BytesPerSecond*0.4) -CimSession $Servers
+ 
+```
+
+Before
+
+![](./media/cluadmin05.png)
+
+After
+
+![](./media/cluadmin06.png)
+
+## Task08 - Enable Storage Spaces Direct and create Volumes
+
+**1.** Delete pool (if the same physical disks were used Azure Stack HCI).
+
+> This code will wipe spaces metadata from all disks that were previously used for spaces and are available to pool
+
+```PowerShell
+$DeletePool=$false
+#Wipe disks
+if ($DeletePool){
+    #Grab pool
+    $StoragePool=Get-StoragePool -CimSession $ClusterName -IsPrimordial $False -ErrorAction Ignore
+    #Wipe Virtual disks if any
+    if ($StoragePool){
+        $Clusterresource=Get-ClusterResource -Cluster $ClusterName | Where-Object ResourceType -eq "Storage Pool"
+        if ($Clusterresource){
+            $Clusterresource | Remove-ClusterResource -Force
+        }
+        $StoragePool | Set-StoragePool -IsReadOnly $False
+        $VirtualDisks=$StoragePool | Get-VirtualDisk -ErrorAction Ignore
+        #Remove Disks
+        if ($VirtualDisks){
+            $VirtualDisks | Remove-VirtualDisk -Confirm:0
+        }
+        #Remove Pool
+        $StoragePool | Remove-StoragePool -Confirm:0
+    }
+    #Reset disks (to clear spaces metadata)
+    Invoke-Command -ComputerName $Servers -ScriptBlock {
+        Get-PhysicalDisk -CanPool $True | Reset-PhysicalDisk
+    }
+}
+ 
+```
+
+**2.** Enable Storage Spaces Direct
+
+```PowerShell
+#Enable-ClusterS2D
+Enable-ClusterS2D -CimSession $ClusterName -confirm:0 -Verbose
+ 
+```
+
+![](./media/powershell26.png)
+
+**3.** Explore Pool and Tiers created
+
+```PowerShell
+#display pool
+    Get-StoragePool "S2D on $ClusterName" -CimSession $ClusterName
+
+#Display disks
+    Get-StoragePool "S2D on $ClusterName" -CimSession $ClusterName | Get-PhysicalDisk -CimSession $ClusterName
+
+#Get Storage Tiers
+    Get-StorageTier -CimSession $ClusterName
+ 
+```
+
+![](./media/powershell27.png)
+
+![](./media/powershell28.png)
+
+**4.** Calculate volume size first
+
+> Following script will do calculation what maximum size volume can be assuming you will use just 4 three-way mirror volumes across 4 nodes. As you can see, it will make it slightly smaller to keep reserve for Performance History volume and metadata
+
+```PowerShell
+#calculate reserve
+$pool=Get-StoragePool -CimSession $clustername -FriendlyName s2D*
+$HDDCapacity= ($pool |Get-PhysicalDisk -CimSession $clustername | where-object mediatype -eq HDD | Measure-Object -Property Size -Sum).Sum
+$HDDMaxSize=  ($pool |Get-PhysicalDisk -CimSession $clustername | where-object mediatype -eq HDD | Measure-Object -Property Size -Maximum).Maximum
+$SSDCapacity= ($pool |Get-PhysicalDisk -CimSession $clustername | where-object mediatype -eq SSD | where-object usage -ne journal | Measure-Object -Property Size -Sum).Sum
+$SSDMaxSize=  ($pool |Get-PhysicalDisk -CimSession $clustername | where-object mediatype -eq SSD | where-object usage -ne journal | Measure-Object -Property Size -Maximum).Maximum
+
+$numberofNodes=(Get-ClusterNode -Cluster $clustername).count
+if ($numberofNodes -eq 2){
+    if ($SSDCapacity){
+    $SSDCapacityToUse=$SSDCapacity-($numberofNodes*$SSDMaxSize)-100GB #100GB just some reserve (16*3 = perfhistory)+some spare capacity
+    $sizeofvolumeonSSDs=$SSDCapacityToUse/2/$numberofNodes
+    }
+    if ($HDDCapacity){
+    $HDDCapacityToUse=$HDDCapacity-($numberofNodes*$HDDMaxSize)-100GB #100GB just some reserve (16*3 = perfhistory)+some spare capacity
+    $sizeofvolumeonHDDs=$HDDCapacityToUse/2/$numberofNodes
+    }
+}else{
+    if ($SSDCapacity){
+    $SSDCapacityToUse=$SSDCapacity-($numberofNodes*$SSDMaxSize)-100GB #100GB just some reserve (16*3 = perfhistory)+some spare capacity
+    $sizeofvolumeonSSDs=$SSDCapacityToUse/3/$numberofNodes
+    }
+    if ($HDDCapacity){
+    $HDDCapacityToUse=$HDDCapacity-($numberofNodes*$HDDMaxSize)-100GB #100GB just some reserve (16*3 = perfhistory)+some spare capacity
+    $sizeofvolumeonHDDs=$HDDCapacityToUse/3/$numberofNodes
+    }
+}
+$sizeofvolumeonSSDs/1TB
+$sizeofvolumeonHDDs/1TB
+ 
+```
+
+> from screenshot below, you can see that in simulated environment is size of volume roughly 14.6TB
+
+![](./media/powershell29.png)
+
+**5.** Create volumes
+
+> You can notice this script is universal and will work for both SSDs and HDDs capacity.
+
+> Thin provisioning is available in Azure Stack HCI version 21H2 and newer
+
+> Note: it might be also useful to specify Mediatype perameter in New-Volume command (as per below example) in case you would have three-tier solution. It does not hurt, and in case both SSDs and HDDs are capacity devices, without this parameter the volume would span both tiers resulting in uneven performance
+
+```PowerShell
+$ThinVolumes=$True
+#configure Pool to default to Thin Provisioning
+if ($ThinVolumes){
+    Set-StoragePool -CimSession $ClusterName -FriendlyName "S2D on $ClusterName" -ProvisioningTypeDefault Thin
+}
+#create volumes
+1..$numberofNodes | ForEach-Object {
+    if ($sizeofvolumeonHDDs){
+        New-Volume -CimSession $ClusterName -FileSystem CSVFS_ReFS -StoragePoolFriendlyName S2D* -Size $sizeofvolumeonHDDs -FriendlyName "Volume$_" -MediaType HDD
+    }
+    if ($sizeofvolumeonSSDs){
+        New-Volume -CimSession $ClusterName -FileSystem CSVFS_ReFS -StoragePoolFriendlyName S2D* -Size $sizeofvolumeonSSDs -FriendlyName "Volume$_" -MediaType SSD
+    }
+}
+ 
+```
+
+![](./media/powershell30.png)
+
+**6.** Check if volumes are thin provisioned
+
+> There are two indicators that volumes are thin provisioned. With basic command get-virtualdisk you will notice much smaller footprint on pool
+
+```PowerShell
+Get-VirtualDisk -CimSession $ClusterName
+ 
+```
+
+![](./media/powershell31.png)
+
+> And with slightly more comlex command
+
+```PowerShell
+Get-VirtualDisk -CimSession $ClusterName | Select-Object FriendlyName,ProvisioningType
+ 
+```
+
+![](./media/powershell32.png)
+
+## Task09 - Register Azure Stack HCI cluster to Azure
+
+**1.** Download prerequisites and log in into Azure
+
+> You can notice, that log in is using device authentication. This means you will not have to log in on the machine you are running script, but in another - like the one you trust.
+
+```PowerShell
+    $ClusterName="AzSHCI-Cluster"
+
+    #download Azure module
+    Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
+    if (!(Get-InstalledModule -Name Az.StackHCI -ErrorAction Ignore)){
+        Install-Module -Name Az.StackHCI -Force
+    }
+
+    #login to azure
+    #download Azure module
+    if (!(Get-InstalledModule -Name az.accounts -ErrorAction Ignore)){
+        Install-Module -Name Az.Accounts -Force
+    }
+    Login-AzAccount -UseDeviceAuthentication
+
+    #select context if more available
+    $context=Get-AzContext -ListAvailable
+    if (($context).count -gt 1){
+        $context=$context | Out-GridView -OutputMode Single
+        $context | Set-AzContext
+    }
+    #load subscription ID into variable
+    $subscriptionID=$context.subscription.id
+ 
+```
+
+![](./media/powershell33.png)
+
+![](./media/powershell34.png)
+
+**2** Register Azure Stack HCI without asking for credentials again and with Resource Group of your choice.
+
+> Notice in following script, that you will be able to choose location for Azure Stack HCI based on availability.
+
+```PowerShell
+$ResourceGroupName="AzureStackHCIClusters"
+if (!(Get-InstalledModule -Name Az.Resources -ErrorAction Ignore)){
+    Install-Module -Name Az.Resources -Force
+}
+#choose location for cluster (and RG)
+$region=(Get-AzLocation | Where-Object Providers -Contains "Microsoft.AzureStackHCI" | Out-GridView -OutputMode Single -Title "Please select Location for AzureStackHCI metadata").Location
+If (-not (Get-AzResourceGroup -Name $ResourceGroupName -ErrorAction Ignore)){
+    New-AzResourceGroup -Name $ResourceGroupName -Location $region
+}
+#Register AZSHCi without prompting for creds
+$armTokenItemResource = "https://management.core.windows.net/"
+$graphTokenItemResource = "https://graph.windows.net/"
+$azContext = Get-AzContext
+$authFactory = [Microsoft.Azure.Commands.Common.Authentication.AzureSession]::Instance.AuthenticationFactory
+$graphToken = $authFactory.Authenticate($azContext.Account, $azContext.Environment, $azContext.Tenant.Id, $null, [Microsoft.Azure.Commands.Common.Authentication.ShowDialog]::Never, $null, $graphTokenItemResource).AccessToken
+$armToken = $authFactory.Authenticate($azContext.Account, $azContext.Environment, $azContext.Tenant.Id, $null, [Microsoft.Azure.Commands.Common.Authentication.ShowDialog]::Never, $null, $armTokenItemResource).AccessToken
+$id = $azContext.Account.Id
+#Register-AzStackHCI -SubscriptionID $subscriptionID -ComputerName $ClusterName -GraphAccessToken $graphToken -ArmAccessToken $armToken -AccountId $id
+Register-AzStackHCI -Region $Region -SubscriptionID $subscriptionID -ComputerName  $ClusterName -GraphAccessToken $graphToken -ArmAccessToken $armToken -AccountId $id -ResourceName $ClusterName -ResourceGroupName $ResourceGroupName
+ 
+```
+
+![](./media/powershell35.png)
+
+**3.** If arc registration fails - as per above example, you can explore logs with following PowerShell
+
+![](./media/powershell36.png)
+
+> Issue can be tracked here: https://github.com/Azure/azure-powershell/issues/16477
+
+```PowerShell
+#Validate task and start it
+    $ArcRegistrationTaskName = "ArcRegistrationTask"
+    Get-ClusteredScheduledTask -Cluster $ClusterName -TaskName $ArcRegistrationTaskName
+    Get-ScheduledTask -CimSession (Get-ClusterNode -Cluster $ClusterName).Name -TaskName $ArcRegistrationTaskName | Start-ScheduledTask
+
+#explore arc install logs
+    Invoke-Command -ComputerName $ClusterName -Scriptblock {Get-ChildItem -Path c:\windows\Tasks\ArcForServers | Get-Content}
+ 
+```
+> Looks like the script attmpted to use different Resource Group than provided. 
+![](./media/powershell37.png)
+
+**4.** To fix issue, let's provide initialize arc registration again
+
+```PowerShell
+if (-not (Get-AzContext)){
+    Login-AzAccount -UseDeviceAuthentication
+}
+function Get-GraphAccessToken{
+    param(
+        [string] $TenantId,
+        [string] $EnvironmentName
+        )
+    
+        # Below commands ensure there is graph access token in cache
+        Get-AzADApplication -DisplayName SomeApp1 -ErrorAction Ignore | Out-Null
+    
+        $graphTokenItemResource = (Get-AzContext).Environment.GraphUrl
+    
+        $authFactory = [Microsoft.Azure.Commands.Common.Authentication.AzureSession]::Instance.AuthenticationFactory
+        $azContext = Get-AzContext
+        $graphTokenItem = $authFactory.Authenticate($azContext.Account, $azContext.Environment, $azContext.Tenant.Id, $null, [Microsoft.Azure.Commands.Common.Authentication.ShowDialog]::Never, $null, $graphTokenItemResource)
+        return $graphTokenItem.AccessToken
+    }
+    
+$azContext = Get-AzContext
+$TenantId = $azContext.Tenant.Id
+$AccountId = $azContext.Account.Id
+$GraphAccessToken = Get-GraphAccessToken -TenantId $TenantId -EnvironmentName $EnvironmentName
+
+Connect-AzureAD -TenantId $TenantId -AadAccessToken $GraphAccessToken -AccountId $AccountId | Out-Null
+
+$arcStatus = Invoke-Command -computername $ClusterName -ScriptBlock { Get-AzureStackHCIArcIntegration }
+$arcAppId = $arcStatus.ApplicationId
+$app=Get-AzureADApplication -Filter "AppId eq '$arcAppId'"
+$sp=Get-AzureADServicePrincipal -Filter "AppId eq '$arcAppId'"
+#create password
+$start = Get-Date
+$end = $start.AddYears(300)
+$pw = New-AzureADServicePrincipalPasswordCredential -ObjectId $sp.ObjectId -StartDate $start -EndDate $end
+
+$Region=(Get-AzLocation | Where-Object Providers -Contains "Microsoft.AzureStackHCI" | Out-GridView -Title "Please select Location" -OutputMode Single).Location
+$ResourceGroupName="AzureStackHCIClusters"
+
+$ArcRegistrationParams = @{
+    AppId = $app.appid
+    Secret = $pw.value
+    TenantId = $TenantId
+    SubscriptionId = $SubscriptionId
+    Region = $Region
+    ResourceGroup = $ResourceGroupName
+}
+Invoke-Command -ComputerName $ClusterName -ScriptBlock { Initialize-AzureStackHCIArcIntegration @Using:ArcRegistrationParams }
+
+#Start registration task
+    $ArcRegistrationTaskName = "ArcRegistrationTask"
+    Get-ScheduledTask -CimSession (Get-ClusterNode -Cluster $ClusterName).Name -TaskName $ArcRegistrationTaskName | Start-ScheduledTask
+
+Start-Sleep 20
+
+#explore arc install logs
+    Invoke-Command -ComputerName $ClusterName -Scriptblock {Get-ChildItem -Path c:\windows\Tasks\ArcForServers | Get-Content}
+ 
+```
+
+![](./media/powershell38.png)
+
+
+## Task10 - Install Windows Admin Center and explore Azure Stack HCI Cluster
+
+
+**1.** Download and Install Windows Admin Center
+
+> Following example will use self-signed certificate. In production, you should use certificate from your certification authority. To learn more you can explore [Windows Admin Center MSLab Scenario](https://github.com/microsoft/MSLab/tree/master/Scenarios/Windows%20Admin%20Center%20and%20Enterprise%20CA)
+
+```PowerShell
+$GatewayServerName="WACGW"
+#Download Windows Admin Center if not present
+if (-not (Test-Path -Path "$env:USERPROFILE\Downloads\WindowsAdminCenter.msi")){
+    Start-BitsTransfer -Source https://aka.ms/WACDownload -Destination "$env:USERPROFILE\Downloads\WindowsAdminCenter.msi"
+}
+#Create PS Session and copy install files to remote server
+Invoke-Command -ComputerName $GatewayServerName -ScriptBlock {Set-Item -Path WSMan:\localhost\MaxEnvelopeSizekb -Value 4096}
+$Session=New-PSSession -ComputerName $GatewayServerName
+Copy-Item -Path "$env:USERPROFILE\Downloads\WindowsAdminCenter.msi" -Destination "$env:USERPROFILE\Downloads\WindowsAdminCenter.msi" -ToSession $Session
+
+#Install Windows Admin Center
+Invoke-Command -Session $session -ScriptBlock {
+    Start-Process msiexec.exe -Wait -ArgumentList "/i $env:USERPROFILE\Downloads\WindowsAdminCenter.msi /qn /L*v log.txt REGISTRY_REDIRECT_PORT_80=1 SME_PORT=443 SSL_CERTIFICATE_OPTION=generate"
+}
+
+$Session | Remove-PSSession
+ 
+```
+
+> The error is expected as PSSession disconnected with Windows Admin Center being installed
+
+![](./media/powershell39.png)
+
+**3.** Make the self-signed certificate trusted
+
+> Following script will download Windows Admin Certificate and will add it into trusted root certificates into local machine. In production you should use trusted certificates
+
+```PowerShell
+$cert = Invoke-Command -ComputerName $GatewayServerName -ScriptBlock {Get-ChildItem Cert:\LocalMachine\My\ |where subject -eq "CN=Windows Admin Center"}
+$cert | Export-Certificate -FilePath $env:TEMP\WACCert.cer
+Import-Certificate -FilePath $env:TEMP\WACCert.cer -CertStoreLocation Cert:\LocalMachine\Root\
+ 
+```
+
+![](./media/powershell40.png)
+
+**4.** Configure Kerberos Constrained Delegation (to avoid providing credentials in WAC)
+
+```PowerShell
+#Configure Resource-Based constrained delegation on all Azure Stack HCI server object in AD
+
+$gatewayObject = Get-ADComputer -Identity $GatewayServerName
+$computers = (Get-ADComputer -Filter {OperatingSystem -eq "Azure Stack HCI"}).Name
+
+foreach ($computer in $computers){
+    $computerObject = Get-ADComputer -Identity $computer
+    Set-ADComputer -Identity $computerObject -PrincipalsAllowedToDelegateToAccount $gatewayObject
+}
+ 
+```
+**3.** Open Edge browser and navigate to https://wacgw
+
+> When prompted for credentials, use LabAdmin\LS1setup!
+
+**4.** To add Azure Stack Cluster, click on **+ Add** button and in Server clusters category click on Add
+
+![](./media/edge01.png)
+
+**5.** Specify AzSHCI-Cluster and click Add
+
+![](./media/edge02.png)
+
+**6.** Explore cluster
+
+![](./media/edge03.png)
+
+![](./media/edge04.png)
+
+![](./media/edge05.png)

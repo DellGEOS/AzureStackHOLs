@@ -1,5 +1,27 @@
 # Exploring Dell OpenManage integration with Windows Admin Center (OMIMWAC)
 
+<!-- TOC -->
+
+- [Exploring Dell OpenManage integration with Windows Admin Center OMIMWAC](#exploring-dell-openmanage-integration-with-windows-admin-center-omimwac)
+    - [About the lab](#about-the-lab)
+    - [Prerequsites](#prerequsites)
+    - [Installing Extension](#installing-extension)
+    - [Exploring extension features](#exploring-extension-features)
+        - [Health](#health)
+        - [Inventory](#inventory)
+        - [iDRAC](#idrac)
+        - [Security](#security)
+        - [Configure](#configure)
+    - [Updating nodes with access to internet](#updating-nodes-with-access-to-internet)
+    - [Updating nodes with offline catalog](#updating-nodes-with-offline-catalog)
+        - [Configure file share with DSU binaries](#configure-file-share-with-dsu-binaries)
+        - [Upload drivers from catalog to fileshare](#upload-drivers-from-catalog-to-fileshare)
+        - [Perform update](#perform-update)
+    - [TBD: Deep dive](#tbd-deep-dive)
+        - [TBD: Collecting logs](#tbd-collecting-logs)
+
+<!-- /TOC -->
+
 ## About the lab
 
 In this lab you will learn about Dell OpenManage integration for Windows Admin Center, how you can install it, what features are available and how to troubleshoot issues (if any) will happen.
@@ -42,7 +64,6 @@ Notice, that OMIMWAC is using iDRAC USB. It also uses temporary iDRAC account to
 ![](./media/wac03.png)
 
 ![](./media/wac04.png)
-
 
 **6** You may also receive an error when running compliance report under update. To mitigate this one, you may need to increase MaxEvenlope size.
 
@@ -104,7 +125,6 @@ As you can see, number of cores and CCDs (Core Chiplet Dies) can be configured.
 In Settings tab you can see, that offline catalog can be used. But two components needs to be provided - Inventory Collector and Dell EMC System Update (DSU). Let's do that with PowerShell
 
 ### Configure file share with DSU binaries
-
 
 **1.** Paste below script to PowerShell to create a File Share with latest DSU and IC.
 
@@ -209,8 +229,10 @@ $items=$xml.manifest.softwarecomponent | Out-GridView -OutputMode Multiple -Titl
 
 #download
 foreach ($item in $items){
-    $filename=$($item.path.split("/")|Select-Object -Last 1)
-    Start-BitsTransfer -Source "https://downloads.dell.com/$($item.path)" -Destination "\\$FileServer\$FileShareName\$filename" -DisplayName "Downloading $filename releasedate $($item.releaseDate)"
+    $Path=$item.path.replace("/","\")
+    $Folder=$Path | Split-Path
+    New-Item -Path \\$FileServer\$FileShareName\ -Name $Folder -ItemType Directory -Force
+    Start-BitsTransfer -Source "https://downloads.dell.com/$($item.path)" -Destination "\\$FileServer\$FileShareName\$Path" -DisplayName "Downloading $Path releasedate $($item.releaseDate)"
 }
  
 ```
@@ -221,13 +243,33 @@ foreach ($item in $items){
 
 ![](./media/explorer02.png)
 
-### TBD: Perform update
+### Perform update
+
+Once all tools, catalog and drivers were populated, DRM Settings configured, cluster can be now offline updated.
+
+**1.** Navigate to Update Tab, and select Offline - Dell EMC Repository Manager Catalog and click on Next: Compliance Report
+
+![](./media/wac17.png)
+
+**2.** In compliance report, select updates you want to apply, and click Next: Summary
+
+![](./media/wac18.png)
+
+**3.** In Summary view, notice, that two options are available - Run now, or Schedule Update. Keep defaults and click Next: Cluster aware update
+
+![](./media/wac19.png)
+
+![](./media/wac20.png)
+
+**4.** If you navigate out and then back to cluster view, you can navigate to Updates tool, and you will see, that there is a CAU run in progress
+
+![](./media/wac21.png)
 
 ## TBD: Deep dive
 
 ### TBD: Collecting logs
 
-```
+```Notes
 WACGW
 C:\Windows\ServiceProfiles\NetworkService\AppData\Local\Temp\generated\logs
 WAC Nodes

@@ -56,15 +56,13 @@ Invoke-Command -ComputerName $Servers -ScriptBlock {
 
 before
 
-[](./media/wac05.png)
+![](./media/wac05.png)
 
 after
 
-[](./media/wac06.png)
+![](./media/wac06.png)
 
 
 ## Exploring extension features
 
-<video width="640" height="480" controls>
-    <source src="./media/OpenManageIntegrationDemo.mp4" type="video/mp4">
-</video>
+![](./media/OpenManageIntegrationDemo.mp4)

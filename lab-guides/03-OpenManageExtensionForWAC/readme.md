@@ -65,4 +65,4 @@ after
 
 ## Exploring extension features
 
-[![ExploringOMIMWACFeatures](/media/youtube01.png)](https://youtu.be/xFltFX_OJoo)
+[![ExploringOMIMWACFeatures](./media/youtube01.png)](https://youtu.be/xFltFX_OJoo)

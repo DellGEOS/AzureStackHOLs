@@ -65,4 +65,4 @@ after
 
 ## Exploring extension features
 
-![](./media/OpenManageIntegrationDemo.mp4)
+[![ExploringOMIMWACFeatures](/media/youtube01.png)](https://youtu.be/xFltFX_OJoo)

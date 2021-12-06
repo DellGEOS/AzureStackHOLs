@@ -219,6 +219,7 @@ foreach ($item in $items){
 
 ![](./media/powershell02.png)
 
+![](./media/explorer02.png)
 
 ### TBD: Perform update
 

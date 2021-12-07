@@ -18,4 +18,4 @@ Guides focused at deploying and operation of Azure Stack HCI Clusters
 
 * [01 Deploy Azure Stack HCI Cluster with Windows Admin Center](lab-guides/01-DeployAzureStackHCICluster-WAC/readme.md)
 * [02 Deploy Azure Stack HCI Cluster with PowerShell](lab-guides/02-DeployAzureStackHCICluster-PowerShell/readme.md)
-* [03 Explore Open Manage Extension for Windows Admin Center](lab-guides/03-OpenManageExtensionForWAC/readme.md)
+* [03 Explore OpenManage Extension for Windows Admin Center](lab-guides/03-OpenManageExtensionForWAC/readme.md)

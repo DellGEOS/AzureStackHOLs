@@ -1,8 +1,8 @@
-# Exploring Dell OpenManage integration with Windows Admin Center (OMIMWAC)
+# Exploring Dell OpenManage integration with Windows Admin Center (OMIMSWAC)
 
 <!-- TOC -->
 
-- [Exploring Dell OpenManage integration with Windows Admin Center OMIMWAC](#exploring-dell-openmanage-integration-with-windows-admin-center-omimwac)
+- [Exploring Dell OpenManage integration with Windows Admin Center OMIMSWAC](#exploring-dell-openmanage-integration-with-windows-admin-center-omimswac)
     - [About the lab](#about-the-lab)
     - [Prerequsites](#prerequsites)
     - [Installing Extension](#installing-extension)
@@ -12,13 +12,13 @@
         - [iDRAC](#idrac)
         - [Security](#security)
         - [Configure](#configure)
-    - [Updating nodes with access to internet](#updating-nodes-with-access-to-internet)
     - [Updating nodes with offline catalog](#updating-nodes-with-offline-catalog)
         - [Configure file share with DSU binaries](#configure-file-share-with-dsu-binaries)
         - [Upload drivers from catalog to fileshare](#upload-drivers-from-catalog-to-fileshare)
         - [Perform update](#perform-update)
-    - [TBD: Deep dive](#tbd-deep-dive)
-        - [TBD: Collecting logs](#tbd-collecting-logs)
+    - [Deep dive](#deep-dive)
+        - [Collecting logs](#collecting-logs)
+        - [Collecting HAR log](#collecting-har-log)
 
 <!-- /TOC -->
 
@@ -26,11 +26,11 @@
 
 In this lab you will learn about Dell OpenManage integration for Windows Admin Center, how you can install it, what features are available and how to troubleshoot issues (if any) will happen.
 
-Following lab will demonstrate OMIMWAC features on two clusters - Azure Stack HCI 21H2 and Windows Server 2022
+Following lab will demonstrate OMIMSWAC features on two clusters - Azure Stack HCI 21H2 and Windows Server 2022
 
 ## Prerequsites
 
-Main prerequisite to have extension working is to have Azure Stack HCI cluster or Windows Server cluster with Dell hardware with proper OMIMWAC license. This lab also assumes Windows Admin Center was already installed (more info in [Azure Stack HCI deployment guide](lab-guides/02-DeployAzureStackHCICluster-PowerShell/readme.md))
+Main prerequisite to have extension working is to have Azure Stack HCI cluster or Windows Server cluster with Dell hardware with proper OMIMSWAC license. This lab also assumes Windows Admin Center was already installed (more info in [Azure Stack HCI deployment guide](lab-guides/02-DeployAzureStackHCICluster-PowerShell/readme.md))
 
 To perform following lab you can setup cluster using guides below:
 
@@ -55,7 +55,7 @@ To perform following lab you can setup cluster using guides below:
 
 **4.** Once Extension is installed, it will be automatically available in Cluster view. You can navigate there and accept terms. 
 
-Notice, that OMIMWAC is using iDRAC USB. It also uses temporary iDRAC account to collect inventory data.
+Notice, that OMIMSWAC is using iDRAC USB. It also uses temporary iDRAC account to collect inventory data.
 
 ![](./media/wac02.png)
 
@@ -86,7 +86,7 @@ after
 
 ## Exploring extension features
 
-[![ExploringOMIMWACFeatures](./media/youtube01.png)](https://youtu.be/xFltFX_OJoo)
+[![ExploringOMIMSWACFeatures](./media/youtube01.png)](https://youtu.be/xFltFX_OJoo)
 
 ### Health
 
@@ -117,8 +117,6 @@ As you can see, number of cores and CCDs (Core Chiplet Dies) can be configured.
 ![](./media/wac13.png)
 
 ![](./media/wac14.png)
-
-## Updating nodes with access to internet
 
 ## Updating nodes with offline catalog
 
@@ -265,17 +263,64 @@ Once all tools, catalog and drivers were populated, DRM Settings configured, clu
 
 ![](./media/wac21.png)
 
-## TBD: Deep dive
+## Deep dive
 
-### TBD: Collecting logs
+### Collecting logs
 
-```Notes
-WACGW
-C:\Windows\ServiceProfiles\NetworkService\AppData\Local\Temp\generated\logs
-WAC Nodes
-C:\Windows\Temp\OMIMSWAC
-Browser HAR log [from browser dev tool, F12 -> Export]
+If something goes wrong, there are multiple places to look for logs. Let's explore logs with following script, that will collect all logs from WAC and cluster nodes.
 
-### Exploring CAU components
-\\axnode1\c$\Users\LabAdmin\AppData\Roaming\Update
+```PowerShell
+$WAC="WACGW"
+$ClusterName="Ax6515-Cluster"
+$ClusterNodes=(Get-ClusterNode -Cluster $ClusterName).Name
+$RunAsUserName="LabAdmin"
+
+#Download logs from WACGW
+    #create session
+    $WACSession=New-PSSession -ComputerName $WAC
+    #zip logs
+    Invoke-Command -Session $WACSession -ScriptBlock {Compress-Archive -Path c:\Windows\ServiceProfiles\NetworkService\AppData\Local\Temp\generated\logs -DestinationPath c:\Windows\ServiceProfiles\NetworkService\AppData\Local\Temp\Generated\logs.zip -Force}
+    #copy
+    Copy-Item -Path c:\Windows\ServiceProfiles\NetworkService\AppData\Local\Temp\Generated\logs.zip -Destination $env:UserProfile\Downloads\waclogs.zip -FromSession $WACSession
+    #remove session
+    $WACSession | Remove-PSSession
+
+#Explore DSU log on Nodes
+#logs are available only when HCI update (CAU) is in progress
+#Logs are available under c:\Users\UserName\AppData\Roaming\Update\Log
+    #Check if CAU is running
+    Get-CauRun -ClusterName $ClusterName
+    #explore logs
+    Invoke-Command -ComputerName $ClusterNodes -ScriptBlock {
+        $path="c:\Users\$using:RunAsUserName\AppData\Roaming\Update\Log\dsu_Update_$($env:ComputerName).log"
+        If (test-path $path){
+            Get-Content $Path
+        }
+    }
+ 
 ```
+
+WAC Logs are zipped and downloaded into downloads.
+
+![](./media/explorer03.png)
+
+Content of DSU log is displayed (only once install is running on node and log is present) in PowerShell.
+
+![](./media/powershell03.png)
+
+### Collecting HAR log
+
+**1.** In Edge browser, click on "three dots" in top right conrner and select More tools. In More tools select Developer tools.
+
+![](./media/edge01.png)
+
+**2.** In developer tools, click in "three dots" and select network from more tools.
+
+![](./media/edge02.png)
+
+**3** Now the recording has started, you can navigate around in extension, so data will start populating. Once you collect data, you can click on pointing down arrow, that will let you download HAR log.
+
+![](./media/edge03.png)
+
+![](./media/edge04.png)
+

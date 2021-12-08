@@ -74,14 +74,14 @@ Depending if you deployed Windows Client operating system, or Windows Server for
 
 ### Task01a - Deploy Windows Admin Center in GW mode
 
-**1.** Log in Into DC virtual machine with following credentials
+**Step 1** Log in Into DC virtual machine with following credentials
 
 > Username: corp\LabAdmin
  Password: LS1setup!
 
-**2.** From start menu, run PowerShell as administrator
+**Step 2** From start menu, run PowerShell as administrator
 
-**3.** To simplify deployment of Windows Admin center in Gateway mode, paste following code into PowerShell window to download and install Windows Admin Center with self-signed certificate, that is also added into trusted root certificate authorities.
+**Step 3** To simplify deployment of Windows Admin center in Gateway mode, paste following code into PowerShell window to download and install Windows Admin Center with self-signed certificate, that is also added into trusted root certificate authorities.
 
 ```PowerShell
 $GatewayServerName="WACGW"
@@ -109,14 +109,14 @@ Import-Certificate -FilePath $env:TEMP\WACCert.cer -CertStoreLocation Cert:\Loca
  
 ```
 
-**4.** Validate deployment by opening Edge and navigating to https://wacgw. When asked for Credentials, use following
+**Step 4** Validate deployment by opening Edge and navigating to https://wacgw. When asked for Credentials, use following
 
 >Username:corp\LabAdmin
 Password:LS1setup!
 
 ![](./media/edge01.png)
 
-**5.** In Windows Admin Center in Gateway mode it is very useful to configure Kerberos Constrained Delegation for not to be asked for credentials when connecting to remote server - in this case Azure Stack HCI OS. To do it in PowerShell, you can use following code.
+**Step 5** In Windows Admin Center in Gateway mode it is very useful to configure Kerberos Constrained Delegation for not to be asked for credentials when connecting to remote server - in this case Azure Stack HCI OS. To do it in PowerShell, you can use following code.
 
 ```PowerShell
 $GatewayServerName="WACGW"
@@ -133,53 +133,53 @@ foreach ($computer in $computers){
 
 ### Task01b - Deploy Windows Admin Center on Windows Client Operating system
 
-**1.** Log in Into Win11 virtual machine with following credentials
+**Step 1** Log in Into Win11 virtual machine with following credentials
 
 > Username: corp\LabAdmin
  Password: LS1setup!
 
-**2.** in Edge browser, navigate to https://aka.ms/wacdownload to download Windows Admin Center installer
+**Step 2** in Edge browser, navigate to https://aka.ms/wacdownload to download Windows Admin Center installer
 
-**3.** Run the downloaded file to initiate a setup. You can select default installation options. Finish installation.
+**Step 3** Run the downloaded file to initiate a setup. You can select default installation options. Finish installation.
 
-**4.** Open Windows Admin Center from start menu. 
+**Step 4** Open Windows Admin Center from start menu. 
 
 ![](./media/startmenu01.png)
 
 ## Task02 - create Azure Stack HCI cluster with Windows Admin Center
 
-**1.** In Windows Admin Center click on **+ Add** and in Server clusters window click on Create New. The Cluster Creation extension will run.
+**Step 1** In Windows Admin Center click on **+ Add** and in Server clusters window click on Create New. The Cluster Creation extension will run.
 
 ![](./media/edge02.png)
 
-**2.** In Choose the cluster type click on **Azure Stack HCI** and select **All servers in one site**. Click on **Create**
+**Step 2** In Choose the cluster type click on **Azure Stack HCI** and select **All servers in one site**. Click on **Create**
 
 ![](./media/edge03.png)
 
 ### Get Started tab
 
-**1.** In Deploy and Azure Stack HCI cluster wizard, Check the prerequisites site click **Next**
+**Step 1** In Deploy and Azure Stack HCI cluster wizard, Check the prerequisites site click **Next**
 
 ![](./media/edge04.png)
 
-**2.** In **Add servers** specify following username and password, and add servers **AzSHCI1**,**AzSHCI2**,**AzSHCI3** and **AzSHCI4**
+**Step 2** In **Add servers** specify following username and password, and add servers **AzSHCI1**,**AzSHCI2**,**AzSHCI3** and **AzSHCI4**
 
 >username: corp\LabAdmin
 password: LS1setup!
 
 ![](./media/edge05.png)
 
-**3.** In Join a domain page, click next, as machines are already domain joined.
+**Step 3** In Join a domain page, click next, as machines are already domain joined.
 
 ![](./media/edge06.png)
 
-**4.** In Install features page click on **Install features**
+**Step 4** In Install features page click on **Install features**
 
 ![](./media/edge07.png)
 
 > Since this is virtual environment, due to architecture change in windows, Hyper-V has to be installed "manually" - information about nested virtalization not enabled is misleading.
 
-**5.** While logged into DC (or Win11) Open PowerShell and paste following script to install Hyper-V
+**Step 5** While logged into DC (or Win11) Open PowerShell and paste following script to install Hyper-V
 
 ```PowerShell
 $Servers="AzSHCI1","AzSHCI2","AzSHCI3","AzSHCI4"
@@ -187,21 +187,21 @@ Invoke-Command -ComputerName $Servers -ScriptBlock {Enable-WindowsOptionalFeatur
  
 ```
 
-**6.** After you click on Install features again, status will turn into Installed. You can clickt next, once finished.
+**Step 6** After you click on Install features again, status will turn into Installed. You can clickt next, once finished.
 
 ![](./media/edge09.png)
 
-**7.** At Install updates page, click on **Install updates**. Once finished, click on Next
+**Step 7** At Install updates page, click on **Install updates**. Once finished, click on Next
 
 ![](./media/edge10.png)
 
 ![](./media/edge11.png)
 
-**8.** Since this system is virtual, you will not be able to see hardware updates. In case you are deploying physical servers, you would be able to launch Dell OMIMSWAC (Open Manage Integration for Microsoft Windows Admin Center) extension.
+**Step 8** Since this system is virtual, you will not be able to see hardware updates. In case you are deploying physical servers, you would be able to launch Dell OMIMSWAC (Open Manage Integration for Microsoft Windows Admin Center) extension.
 
 ![](./media/edge12.png)
 
-**9.** In Restart servers page, click restart and wait for servers to come up again. Once finished, click on Networking
+**Step 9** In Restart servers page, click restart and wait for servers to come up again. Once finished, click on Networking
 
 ![](./media/edge13.png)
 
@@ -211,11 +211,11 @@ Invoke-Command -ComputerName $Servers -ScriptBlock {Enable-WindowsOptionalFeatur
 
 Window Admin Center currently does not support converged networking. In following example we will use 4 NICs - two for east-west and two for north-south traffic.
 
-**1.** On Check network adapters page explore adapters and click Next.
+**Step 1** On Check network adapters page explore adapters and click Next.
 
 ![](./media/edge15.png)
 
-**2.** On Select management adapters page, select Two physical adapters teamed for management and select first 2 adapters as management. Once all first two adapters are selected, click on **Apply and test**. After all is applied, click **Next**.
+**Step 2** On Select management adapters page, select Two physical adapters teamed for management and select first 2 adapters as management. Once all first two adapters are selected, click on **Apply and test**. After all is applied, click **Next**.
 
 ![](./media/edge16.png)
 
@@ -223,15 +223,15 @@ Window Admin Center currently does not support converged networking. In followin
 
 ![](./media/edge18.png)
 
-**3.** On Virtual Switch page keep **Create one virtual switch for compute and storage together** selected and click **Next**
+**Step 3** On Virtual Switch page keep **Create one virtual switch for compute and storage together** selected and click **Next**
 
 ![](./media/edge19.png)
 
-**4.** On RDMA page click Next as in Virtual Environment RDMA does not work.
+**Step 4** On RDMA page click Next as in Virtual Environment RDMA does not work.
 
 ![](./media/edge20.png)
 
-**5.** On Define Networks page, fill network adapters names, IP Addresses and VLAN ID as per screenshot below.
+**Step 5** On Define Networks page, fill network adapters names, IP Addresses and VLAN ID as per screenshot below.
 
 Click on **Apply and test** once finished.
 
@@ -252,7 +252,7 @@ Once finished, click Next:Clustering
 
 ### Clustering
 
-**1.** On Validate the cluster page click on Validate to validate the cluster. Cluster validation will start.
+**Step 1** On Validate the cluster page click on Validate to validate the cluster. Cluster validation will start.
 
 Once validation is completed, click Next.
 
@@ -262,7 +262,7 @@ Once validation is completed, click Next.
 
 ![](./media/edge26.png)
 
-**2** On Create cluster page fill Cluster Name (AzSHCI-Cluster) and IP Address (10.0.0.111) and click **Create Cluster**. Cluster creation will start.
+**Step 2** On Create cluster page fill Cluster Name (AzSHCI-Cluster) and IP Address (10.0.0.111) and click **Create Cluster**. Cluster creation will start.
 
 Once finished, click on **Next: Storage**
 
@@ -275,23 +275,23 @@ Once finished, click on **Next: Storage**
 
 ### Storage
 
-**1.** On Clean drives page, click on Erase Drives. Once erasing is done, click Next
+**Step 1** On Clean drives page, click on Erase Drives. Once erasing is done, click Next
 
 ![](./media/edge30.png)
 
 ![](./media/edge31.png)
 
-**2.** On Check drives page explore disks, and click **Next**
+**Step 2** On Check drives page explore disks, and click **Next**
 
 ![](./media/edge32.png)
 
-**3.** On Validate Storage page, wait for Validate Storage to finish. After validation is finished, explore results and click Next.
+**Step 3** On Validate Storage page, wait for Validate Storage to finish. After validation is finished, explore results and click Next.
 
 ![](./media/edge33.png)
 
 ![](./media/edge34.png)
 
-**4.** On Enable Storage Spaces Direct page, click Enable.
+**Step 4** On Enable Storage Spaces Direct page, click Enable.
 
 Once finished, click on Next: SDN
 
@@ -307,15 +307,15 @@ For sake of complexity, SDN step will be skipped. Click on **Skip** to close Clu
 
 ![](./media/edge38.png)
 
-## Connect to Cluster
+## Task 03 - Connect to Cluster
 
-**1.** After Cluster Creation Extension finishes, click on Go to connection list button. Azure Stack HCI cluster will be present.
+**Step 1** After Cluster Creation Extension finishes, click on Go to connection list button. Azure Stack HCI cluster will be present.
 
 ![](./media/edge39.png)
 
 ![](./media/edge40.png)
 
-**2.** to avoid asking for credentials again, configure kerberos constrained delegation for CNO using following PowerShell command
+**Step 2** to avoid asking for credentials again, configure kerberos constrained delegation for CNO using following PowerShell command
 
 ```PowerShell
 $GatewayServerName="WACGW"
@@ -330,7 +330,7 @@ foreach ($computer in $computers){
  
 ```
 
-**3.** In Windows Admin Center open azshci-cluster.corp.contoso.com. You can now explore your newly created cluster.
+**Step 3** In Windows Admin Center open azshci-cluster.corp.contoso.com. You can now explore your newly created cluster.
 
 ![](./media/edge41.png)
 

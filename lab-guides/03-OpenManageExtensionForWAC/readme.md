@@ -5,20 +5,20 @@
 - [Exploring Dell OpenManage integration with Windows Admin Center OMIMSWAC](#exploring-dell-openmanage-integration-with-windows-admin-center-omimswac)
     - [About the lab](#about-the-lab)
     - [Prerequsites](#prerequsites)
-    - [Installing Extension](#installing-extension)
-    - [Exploring extension features](#exploring-extension-features)
+    - [Task 01 - Install Extension](#task-01---install-extension)
+    - [Task 02 - Explore extension features](#task-02---explore-extension-features)
         - [Health](#health)
         - [Inventory](#inventory)
         - [iDRAC](#idrac)
         - [Security](#security)
         - [Configure](#configure)
-    - [Updating nodes with offline catalog](#updating-nodes-with-offline-catalog)
-        - [Configure file share with DSU binaries](#configure-file-share-with-dsu-binaries)
-        - [Upload drivers from catalog to fileshare](#upload-drivers-from-catalog-to-fileshare)
+    - [Task 03 - Update nodes with offline catalog](#task-03---update-nodes-with-offline-catalog)
+        - [Task 03a - Configure file share with DSU binaries](#task-03a---configure-file-share-with-dsu-binaries)
+        - [Task 03b - Upload drivers from catalog to fileshare](#task-03b---upload-drivers-from-catalog-to-fileshare)
         - [Perform update](#perform-update)
-    - [Deep dive](#deep-dive)
-        - [Collecting logs](#collecting-logs)
-        - [Collecting HAR log](#collecting-har-log)
+    - [Task 04 - Deep dive](#task-04---deep-dive)
+        - [Task 04a - Collecting logs](#task-04a---collecting-logs)
+        - [Task 04b - Collecting HAR log](#task-04b---collecting-har-log)
 
 <!-- /TOC -->
 
@@ -43,29 +43,29 @@ To perform following lab you can setup cluster using guides below:
 * [Deploy Azure Stack HCI with PowerShell](lab-guides/02-DeployAzureStackHCICluster-PowerShell/readme.md)
 
 
-## Installing Extension
+## Task 01 - Install Extension
 
-**1.** In Windows Admin Center, navigate to settings (sprocket in top right corner).
+**Step 1** In Windows Admin Center, navigate to settings (sprocket in top right corner).
 
-**2.** In Settings, navigate to Extensions
+**Step 2** In Settings, navigate to Extensions
 
-**3.** In Extensions select Dell EMC OpenManage Integration and click on Install. Extension will be now installed
+**Step 3** In Extensions select Dell EMC OpenManage Integration and click on Install. Extension will be now installed
 
 ![](./media/wac01.png)
 
-**4.** Once Extension is installed, it will be automatically available in Cluster view. You can navigate there and accept terms. 
+**Step 4** Once Extension is installed, it will be automatically available in Cluster view. You can navigate there and accept terms. 
 
 Notice, that OMIMSWAC is using iDRAC USB. It also uses temporary iDRAC account to collect inventory data.
 
 ![](./media/wac02.png)
 
-**5.** You may receive error about collecting information about Secured-core. To fix it, you can navigate to Security tab and provide run-as credentials.
+**Step 5** You may receive error about collecting information about Secured-core. To fix it, you can navigate to Security tab and provide run-as credentials.
 
 ![](./media/wac03.png)
 
 ![](./media/wac04.png)
 
-**6** You may also receive an error when running compliance report under update. To mitigate this one, you may need to increase MaxEvenlope size.
+**Step 6** You may also receive an error when running compliance report under update. To mitigate this one, you may need to increase MaxEvenlope size.
 
 ```PowerShell
 $Servers="AxNode1","AxNode2"
@@ -84,7 +84,7 @@ after
 ![](./media/wac06.png)
 
 
-## Exploring extension features
+## Task 02 - Explore extension features
 
 [![ExploringOMIMSWACFeatures](./media/youtube01.png)](https://youtu.be/xFltFX_OJoo)
 
@@ -118,13 +118,13 @@ As you can see, number of cores and CCDs (Core Chiplet Dies) can be configured.
 
 ![](./media/wac14.png)
 
-## Updating nodes with offline catalog
+## Task 03 - Update nodes with offline catalog
 
 In Settings tab you can see, that offline catalog can be used. But two components needs to be provided - Inventory Collector and Dell EMC System Update (DSU). Let's do that with PowerShell
 
-### Configure file share with DSU binaries
+### Task 03a - Configure file share with DSU binaries
 
-**1.** Paste below script to PowerShell to create a File Share with latest DSU and IC.
+**Step 1** Paste below script to PowerShell to create a File Share with latest DSU and IC.
 
 ```PowerShell
 $FileServer="WACGW"
@@ -204,17 +204,17 @@ Result
 
 ![](./media/explorer01.png)
 
-**2.** You can now configure your fileshare in Windows Admin Center and click Save.
+**Step 2** You can now configure your fileshare in Windows Admin Center and click Save.
 
 ![](./media/wac15.png)
 
-**3.** To configure catalog, navigate to Update tab and click on DRM settings under Offline - Dell EMC Repository Manager Catalog.
+**Step 3** To configure catalog, navigate to Update tab and click on DRM settings under Offline - Dell EMC Repository Manager Catalog.
 
 ![](./media/wac16.png)
 
-### Upload drivers from catalog to fileshare
+### Task 03b - Upload drivers from catalog to fileshare
 
-**1.** Following script will simply let you download any component from catalog you select and upload it to fileshare. Script will let you select (filter, sort), or you can simply select all.
+**Step 1** Following script will simply let you download any component from catalog you select and upload it to fileshare. Script will let you select (filter, sort), or you can simply select all.
 
 ```PowerShell
 $FileServer="WACGW"
@@ -245,27 +245,27 @@ foreach ($item in $items){
 
 Once all tools, catalog and drivers were populated, DRM Settings configured, cluster can be now offline updated.
 
-**1.** Navigate to Update Tab, and select Offline - Dell EMC Repository Manager Catalog and click on Next: Compliance Report
+**Step 1** Navigate to Update Tab, and select Offline - Dell EMC Repository Manager Catalog and click on Next: Compliance Report
 
 ![](./media/wac17.png)
 
-**2.** In compliance report, select updates you want to apply, and click Next: Summary
+**Step 2** In compliance report, select updates you want to apply, and click Next: Summary
 
 ![](./media/wac18.png)
 
-**3.** In Summary view, notice, that two options are available - Run now, or Schedule Update. Keep defaults and click Next: Cluster aware update
+**Step 3** In Summary view, notice, that two options are available - Run now, or Schedule Update. Keep defaults and click Next: Cluster aware update
 
 ![](./media/wac19.png)
 
 ![](./media/wac20.png)
 
-**4.** If you navigate out and then back to cluster view, you can navigate to Updates tool, and you will see, that there is a CAU run in progress
+**Step 4** If you navigate out and then back to cluster view, you can navigate to Updates tool, and you will see, that there is a CAU run in progress
 
 ![](./media/wac21.png)
 
-## Deep dive
+## Task 04 - Deep dive
 
-### Collecting logs
+### Task 04a - Collecting logs
 
 If something goes wrong, there are multiple places to look for logs. Let's explore logs with following script, that will collect all logs from WAC and cluster nodes.
 
@@ -308,17 +308,17 @@ Content of DSU log is displayed (only once install is running on node and log is
 
 ![](./media/powershell03.png)
 
-### Collecting HAR log
+### Task 04b - Collecting HAR log
 
-**1.** In Edge browser, click on "three dots" in top right conrner and select More tools. In More tools select Developer tools.
+**Step 1** In Edge browser, click on "three dots" in top right conrner and select More tools. In More tools select Developer tools.
 
 ![](./media/edge01.png)
 
-**2.** In developer tools, click in "three dots" and select network from more tools.
+**Step 2** In developer tools, click in "three dots" and select network from more tools.
 
 ![](./media/edge02.png)
 
-**3** Now the recording has started, you can navigate around in extension, so data will start populating. Once you collect data, you can click on pointing down arrow, that will let you download HAR log.
+**Step 3** Now the recording has started, you can navigate around in extension, so data will start populating. Once you collect data, you can click on pointing down arrow, that will let you download HAR log.
 
 ![](./media/edge03.png)
 

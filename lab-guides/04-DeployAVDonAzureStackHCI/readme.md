@@ -5,14 +5,16 @@
 - [Deploying Azure Virtual Desktop on Azure Stack HCI Cluster](#deploying-azure-virtual-desktop-on-azure-stack-hci-cluster)
     - [About the lab](#about-the-lab)
     - [Prerequsites](#prerequsites)
-    - [Define Variables](#define-variables)
-    - [Prepare cluster](#prepare-cluster)
-    - [Create Host Pool in Azure](#create-host-pool-in-azure)
-    - [Grab VHD from Azure, and copy it to Library Share](#grab-vhd-from-azure-and-copy-it-to-library-share)
-        - [Explore available disks in Azure](#explore-available-disks-in-azure)
-        - [Export image to managed disk and download](#export-image-to-managed-disk-and-download)
-    - [Create VMs on Azure Stack HCI Cluster](#create-vms-on-azure-stack-hci-cluster)
-    - [Connect VMs to Azure](#connect-vms-to-azure)
+    - [Task 01 - Define Variables](#task-01---define-variables)
+    - [Task 02 - Prepare cluster](#task-02---prepare-cluster)
+    - [Task 03 - Create Host Pool in Azure](#task-03---create-host-pool-in-azure)
+    - [Task 04 - Grab VHD from Azure, and copy it to Library Share](#task-04---grab-vhd-from-azure-and-copy-it-to-library-share)
+        - [Task 04a - Explore available disks in Azure](#task-04a---explore-available-disks-in-azure)
+        - [Task 04b - Export image to managed disk and download](#task-04b---export-image-to-managed-disk-and-download)
+    - [Task 05 - Create VMs on Azure Stack HCI Cluster](#task-05---create-vms-on-azure-stack-hci-cluster)
+    - [Task 06 - Connect VMs to Azure](#task-06---connect-vms-to-azure)
+        - [Task 06a - Connect VMs to Azure Arc](#task-06a---connect-vms-to-azure-arc)
+        - [Task 06b - Connect VMs to Azure Virtual Desktop Host Pool](#task-06b---connect-vms-to-azure-virtual-desktop-host-pool)
 
 <!-- /TOC -->
 
@@ -40,9 +42,9 @@ To perform following lab you can setup cluster using guides below:
 
 * [Deploy Azure Stack HCI with PowerShell](lab-guides/02-DeployAzureStackHCICluster-PowerShell/readme.md)
 
-## Define Variables
+## Task 01 - Define Variables
 
-**1.** While logged into Management machine (or DC in MSLab), run following code to define variables that will be used in this lab. It will also let you log in into Azure and will install all modules that will be needed.
+**Step 1** While logged into Management machine (or DC in MSLab), run following code to define variables that will be used in this lab. It will also let you log in into Azure and will install all modules that will be needed.
 
 > Note: you can adjust code to fit your lab/environment - such as cluster name, OU, vSwitch name ...
 
@@ -103,9 +105,9 @@ $SKU="win11-21h2-avd-m365"
  
 ```
 
-## Prepare cluster
+## Task 02 - Prepare cluster
 
-**1.** Configure cluster to use Thin provisioning as default (if thin provisioning is available)
+**Step 1** Configure cluster to use Thin provisioning as default (if thin provisioning is available)
 
 ```PowerShell
 #configure thin volumes a default if available (because why not :)
@@ -122,7 +124,7 @@ $SKU="win11-21h2-avd-m365"
 
 ![](./media/powershell01.png)
 
-**2.** Now let's create Volumes (virtual disks) where VMs will be placed. And also one for "Library", where VHDs for VMs can be stored.
+**Step 2** Now let's create Volumes (virtual disks) where VMs will be placed. And also one for "Library", where VHDs for VMs can be stored.
 
 > Note: the script will create one volume per node for VMs with the same name as node.
 
@@ -144,9 +146,9 @@ $SKU="win11-21h2-avd-m365"
 
 ![](./media/powershell02.png)
 
-## Create Host Pool in Azure
+## Task 03 - Create Host Pool in Azure
 
-**1.** Create Azure Virtual Desktop Host Pool. You will be asked for Region where to create Resource Group and Host Pool.
+**Step 1** Create Azure Virtual Desktop Host Pool. You will be asked for Region where to create Resource Group and Host Pool.
 
 ```PowerShell
 #Create resource Group
@@ -165,11 +167,11 @@ $SKU="win11-21h2-avd-m365"
 
 ![](./media/edge01.png)
 
-## Grab VHD from Azure, and copy it to Library Share
+## Task 04 - Grab VHD from Azure, and copy it to Library Share
 
-### Explore available disks in Azure
+### Task 04a - Explore available disks in Azure
 
-**1.** First, you need to explore what publishers are available in Azure
+**Step 1** First, you need to explore what publishers are available in Azure
 
 ```PowerShell
 Get-AzVMImagePublisher -Location $region | Out-GridView
@@ -180,7 +182,7 @@ As you can see, there is quite some number of publishers available. Just Microso
 
 ![](./media/powershell05.png)
 
-**2.** Since we know we are after "microsoftwindowsdesktop", let's list all Offers from this publisher
+**Step 2** Since we know we are after "microsoftwindowsdesktop", let's list all Offers from this publisher
 
 ```PowerShell
 Get-AzVMImageOffer -Location $region -PublisherName  "microsoftwindowsdesktop"
@@ -189,7 +191,7 @@ Get-AzVMImageOffer -Location $region -PublisherName  "microsoftwindowsdesktop"
 
 ![](./media/powershell06.png)
 
-**3.** Let's explore what images are available for Windows 11 (Teams and Office were available only in preview win11 offer when this HOL was written) and Windows 10
+**Step 3** Let's explore what images are available for Windows 11 (Teams and Office were available only in preview win11 offer when this HOL was written) and Windows 10
 
 ```PowerShell
 #list win10 SKUs
@@ -201,7 +203,7 @@ Get-AzVMImageOffer -Location $region -PublisherName  "microsoftwindowsdesktop"
 
 ![](./media/powershell07.png)
 
-**4.** And now we can finally explore what images are available under SKU.
+**Step 4** And now we can finally explore what images are available under SKU.
 
 ```PowerShell
 Get-AzVMImage -Location $region -PublisherName "microsoftwindowsdesktop" -Offer $Offer -SKU $SKU
@@ -210,9 +212,9 @@ Get-AzVMImage -Location $region -PublisherName "microsoftwindowsdesktop" -Offer 
 
 ![](./media/powershell08.png)
 
-### Export image to managed disk and download
+### Task 04b - Export image to managed disk and download
 
-**1.** Let's work with image and export it into managed disk
+**Step 1** Let's work with image and export it into managed disk
 
 ```PowerShell
 #let's work with win11-21h2-avd-m365
@@ -231,7 +233,7 @@ Get-AzVMImage -Location $region -PublisherName "microsoftwindowsdesktop" -Offer 
 ![](./media/edge02.png)
 
 
-**2.** Grant access to disk, so disk will be downloadable from internet.
+**Step 2** Grant access to disk, so disk will be downloadable from internet.
 
 ```PowerShell
 #Grant Access https://docs.microsoft.com/en-us/azure/storage/common/storage-sas-overview
@@ -244,7 +246,7 @@ $SAS
 
 ![](./media/powershell10.png)
 
-**3.** The next step would be to download image from Azure. To do that, Start-BitsTransfer can be used, but let's use tool that was designed to transfer files from/to azure - AZCopy
+**Step 3** The next step would be to download image from Azure. To do that, Start-BitsTransfer can be used, but let's use tool that was designed to transfer files from/to azure - AZCopy
 
 > Note: the following example demonstrates copy with cap limited to 500MBps
 
@@ -270,7 +272,7 @@ $SAS
 
 ![](./media/powershell12.png)
 
-**4.** Once Image is downloaded, access can be revoked and image can be deleted.
+**Step 4** Once Image is downloaded, access can be revoked and image can be deleted.
 
 ```PowerShell
 #once disk is downloaded, disk access can be revoked
@@ -282,7 +284,7 @@ $SAS
 
 ![](./media/powershell13.png)
 
-**5.** Since disk is static VHD, it is useful to convert it into VHDx and compress.
+**Step 5** Since disk is static VHD, it is useful to convert it into VHDx and compress.
 
 ```PowerShell
 #convert image to dynamic VHDx
@@ -301,11 +303,11 @@ After
 
 ![](./media/explorer02.png)
 
-## Create VMs on Azure Stack HCI Cluster
+## Task 05 - Create VMs on Azure Stack HCI Cluster
 
 Following code is more a "Paste and forget", but let's go deep dive into what is really happening
 
-**1.** Generate list of VMs that will be created
+**Step 1** Generate list of VMs that will be created
 
 > Note: you can see from the output, that following script will generate list of VMs and it's names. You can easily adjust size of VMs and number of VMs per node.
 
@@ -324,7 +326,7 @@ Following code is more a "Paste and forget", but let's go deep dive into what is
 
 ![](./media/powershell14.png)
 
-**2.** Create VMs
+**Step 2** Create VMs
 
 > Note: The script will use VHD from library, will provision answer file with domain join information (using offline domain join) and inject it into VHD. Once VHD is generated, it will create a VM, add it as clustered role and will start it
 
@@ -447,8 +449,173 @@ result
 
 ![](./media/cluadmin01.png)
 
-## Connect VMs to Azure
+## Task 06 - Connect VMs to Azure
 
 To connect VMs to Azure, there are two agents needed. One is for connecting VMs to Azure Arc, and second is to connect VMs to Azure Virtual Desktop Host Pool.
 
-### Connect VMs to Azure Arc
+### Task 06a - Connect VMs to Azure Arc
+
+Connecting Azure Stack HCI to Azure arc has two parts. One is to install Arc Agent itself, and second is to hook agent into azure using Azure Service Principal (identity to join machines to Azure).
+
+This part is based on [Azure Arc for Servers](https://github.com/microsoft/MSLab/tree/master/Scenarios/Azure%20Arc%20for%20Servers) MSLab scenario.
+
+> Note: Since it is based on above mentioned scenario, the code is almost 1:1, so it's bit rough.
+
+**Step 1** Download and install package to Virtual Machines
+
+> Since we enabled WINRM (PowerShell remoting) using script in answer file, files can be copied using PS Session.
+
+```PowerShell
+$servers=$VMs.VMName
+
+# Download the package
+Start-BitsTransfer -Source https://aka.ms/AzureConnectedMachineAgent -Destination "$env:UserProfile\Downloads\AzureConnectedMachineAgent.msi"
+#Copy ARC agent to VMs
+#increase max evenlope size first
+Invoke-Command -ComputerName $servers -ScriptBlock {Set-Item -Path WSMan:\localhost\MaxEnvelopeSizekb -Value 4096}
+#create sessions
+$sessions=New-PSSession -ComputerName $servers
+#copy ARC agent
+foreach ($session in $sessions){
+    Copy-Item -Path "$env:USERPROFILE\Downloads\AzureConnectedMachineAgent.msi" -Destination "$env:USERPROFILE\Downloads\" -tosession $session -force
+}
+
+$Sessions | Remove-PSSession
+
+#install package
+Invoke-Command -ComputerName $servers -ScriptBlock {
+    Start-Process -FilePath "msiexec.exe" -ArgumentList "/i $env:USERPROFILE\Downloads\AzureConnectedMachineAgent.msi /l*v $env:USERPROFILE\Downloads\ACMinstallationlog.txt /qn" -Wait
+}
+<#uninstall if needed
+Invoke-Command -ComputerName $servers -ScriptBlock {
+    Start-Process -FilePath "msiexec.exe" -ArgumentList "/uninstall $env:USERPROFILE\Downloads\AzureConnectedMachineAgent.msi /qn" -Wait
+}
+#>
+ 
+```
+
+**Step 2** Create [Service Principal](https://docs.microsoft.com/en-us/azure/active-directory/develop/app-objects-and-service-principals) that will be used for registering into Azure
+
+```PowerShell
+#Some variables
+    $ResourceGroupName=$AVDResourceGroupName
+    $ServicePrincipalName="Arc-for-servers"
+    $TenantID=(Get-AzContext).Tenant.ID
+    $SubscriptionID=(Get-AzContext).Subscription.ID
+    $location=(Get-AzResourceGroup -Name $ResourceGroupName).Location
+    $tags="Platform=Windows"
+    $password="" #here goes ADApp password. If empty, script will generate new secret. Make sure this secret is the same as in Azure
+
+
+#Register ARC Resource provider
+    Register-AzResourceProvider -ProviderNamespace Microsoft.HybridCompute
+    Register-AzResourceProvider -ProviderNamespace Microsoft.GuestConfiguration
+
+#Create AzADServicePrincipal if it does not already exist
+    $SP=Get-AZADServicePrincipal -DisplayName $ServicePrincipalName
+    if (-not $SP){
+        $SP=New-AzADServicePrincipal -DisplayName "Arc-for-servers" -Role "Azure Connected Machine Onboarding"
+        #remove default cred
+        Remove-AzADAppCredential -ApplicationId $SP.AppId
+    }
+ 
+```
+
+![](./media/edge03.png)
+
+**Step 3** Create new password for ADServicePrincipal
+
+```PowerShell
+#Create new password
+    if (-not ($password)){
+        $credential = New-Object -TypeName "Microsoft.Azure.PowerShell.Cmdlets.Resources.MSGraph.Models.ApiV10.MicrosoftGraphPasswordCredential" -Property @{
+            "KeyID"         = (new-guid).Guid ;
+            "EndDateTime" = [DateTime]::UtcNow.AddYears(10)
+        }
+        $Creds=New-AzADAppCredential -PasswordCredentials $credential -ApplicationID $SP.AppID
+        $password=$Creds.SecretText
+        Write-Host "Your Password is: " -NoNewLine ; Write-Host $password -ForegroundColor Cyan
+    }
+
+#sleep for 1m just to let ADApp password to propagate
+Start-Sleep 60
+ 
+```
+
+![](./media/powershell16.png)
+
+**Step 4** Configure Arc Agents on VMs to connect to your Azure Subscription
+
+```PowerShell
+#configure Azure ARC agent on servers
+    Invoke-Command -ComputerName $Servers -ScriptBlock {
+        Start-Process -FilePath "$env:ProgramFiles\AzureConnectedMachineAgent\azcmagent.exe" -ArgumentList "connect --service-principal-id $($using:SP.AppID) --service-principal-secret $using:password --resource-group $using:ResourceGroupName --tenant-id $using:TenantID --location $($using:Location) --subscription-id $using:SubscriptionID --tags $using:Tags" -Wait
+    }
+
+#Validate if agents are connected
+    Invoke-Command -ComputerName $Servers -ScriptBlock {
+        & "C:\Program Files\AzureConnectedMachineAgent\azcmagent.exe" show
+    }
+ 
+```
+
+![](./media/powershell17.png)
+
+![](./media/edge04.png)
+
+### Task 06b - Connect VMs to Azure Virtual Desktop Host Pool
+
+**Step 1** Download AVD Agent and Bootloader agent and copy to VMs
+
+> Note: More information cabout registering AVD machines can be found [here](https://docs.microsoft.com/en-us/azure/virtual-desktop/create-host-pools-powershell?tabs=azure-powershell#register-the-virtual-machines-to-the-azure-virtual-desktop-host-pool
+)
+
+```PowerShell
+#Download Agent and Bootloader
+    Start-BitsTransfer -Source https://query.prod.cms.rt.microsoft.com/cms/api/am/binary/RWrmXv -Destination "$env:UserProfile\Downloads\AVDAgent.msi"
+    Start-BitsTransfer -Source https://query.prod.cms.rt.microsoft.com/cms/api/am/binary/RWrxrH -Destination "$env:UserProfile\Downloads\AVDAgentBootloader.msi"
+
+#Copy agent and bootloader to VMs
+    #create sessions
+    $sessions=New-PSSession -ComputerName $VMs.VMName
+    #copy ARC agent
+    foreach ($session in $sessions){
+        Copy-Item -Path "$env:USERPROFILE\Downloads\AVDAgent.msi" -Destination "$env:USERPROFILE\Downloads\" -tosession $session -force
+        Copy-Item -Path "$env:USERPROFILE\Downloads\AVDAgentBootloader.msi" -Destination "$env:USERPROFILE\Downloads\" -tosession $session -force
+    }
+    $sessions | Remove-PSSession
+ 
+```
+
+**Step 2** Install agents with Registration Token
+
+> Note: Registration token is a secret, that is used to communicate to Azure
+
+```PowerShell
+#Install agents
+    #Grab registration token
+    $Token=(Get-AzWvdHostPoolRegistrationToken -HostPoolName $AVDHostPoolName -ResourceGroupName $AVDResourceGroupName).Token
+    if (-not ($Token)){
+        $Token=(New-AzWvdRegistrationInfo -ResourceGroupName $AVDResourceGroupName -HostPoolName $AVDHostPoolName -ExpirationTime $((get-date).ToUniversalTime().AddDays(30).ToString('yyyy-MM-ddTHH:mm:ss.fffffffZ'))).TOken
+    }
+
+    #Install agents
+    Invoke-Command -ComputerName $VMs.VMName -ScriptBlock {
+        Start-Process -FilePath "msiexec.exe" -ArgumentList "/i $env:USERPROFILE\Downloads\AVDAgent.msi /l*v $env:USERPROFILE\Downloads\AVDAgentInstallationLog.txt /qn /norestart REGISTRATIONTOKEN=$using:token RDInfraAgent=BYODesktop" -Wait -PassThru
+        Start-Process -FilePath "msiexec.exe" -ArgumentList "/i $env:USERPROFILE\Downloads\AVDAgentBootloader.msi /l*v $env:USERPROFILE\Downloads\AVDAgentBootloaderInstallationLog.txt /qn /norestart" -Wait -PassThru
+    }
+ 
+```
+
+![](./media/edge05.png)
+
+
+**Step 3** Restart AVD Hosts (VMs)
+
+```PowerShell
+#Restart VMs to finish installation
+    Restart-Computer -ComputerName $VMs.VMName -Protocol WSMan -Wait -For PowerShell
+ 
+```
+
+![](./media/edge06.png)

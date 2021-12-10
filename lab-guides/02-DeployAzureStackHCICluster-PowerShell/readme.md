@@ -6,15 +6,15 @@
     - [About the lab](#about-the-lab)
     - [Prerequisites](#prerequisites)
     - [LabConfig](#labconfig)
-    - [Task01 - Install management tools](#task01---install-management-tools)
-    - [Task02 - Perform Windows Update](#task02---perform-windows-update)
-    - [Task03 - Configure basic settings on servers](#task03---configure-basic-settings-on-servers)
-    - [Task04 - Configure Networking](#task04---configure-networking)
-    - [Task05 - Validate Networking](#task05---validate-networking)
-    - [Task06 - Create and configure Cluster](#task06---create-and-configure-cluster)
-    - [Task08 - Enable Storage Spaces Direct and create Volumes](#task08---enable-storage-spaces-direct-and-create-volumes)
-    - [Task09 - Register Azure Stack HCI cluster to Azure](#task09---register-azure-stack-hci-cluster-to-azure)
-    - [Task10 - Install Windows Admin Center and explore Azure Stack HCI Cluster](#task10---install-windows-admin-center-and-explore-azure-stack-hci-cluster)
+    - [Task 01 - Install management tools](#task-01---install-management-tools)
+    - [Task 02 - Perform Windows Update](#task-02---perform-windows-update)
+    - [Task 03 - Configure basic settings on servers](#task-03---configure-basic-settings-on-servers)
+    - [Task 04 - Configure Networking](#task-04---configure-networking)
+    - [Task 05 - Validate Networking](#task-05---validate-networking)
+    - [Task 06 - Create and configure Cluster](#task-06---create-and-configure-cluster)
+    - [Task 08 - Enable Storage Spaces Direct and create Volumes](#task-08---enable-storage-spaces-direct-and-create-volumes)
+    - [Task 09 - Register Azure Stack HCI cluster to Azure](#task-09---register-azure-stack-hci-cluster-to-azure)
+    - [Task 10 - Install Windows Admin Center and explore Azure Stack HCI Cluster](#task-10---install-windows-admin-center-and-explore-azure-stack-hci-cluster)
 
 <!-- /TOC -->
 
@@ -60,25 +60,25 @@ Deployment result
 
 ![](./media/hvmanager01.png)
 
-## Task01 - Install management tools
+## Task 01 - Install management tools
 
 Depending where you are running PowerShell from, you need to install management tools and PowerShell modules that will be used. It differs if management machine
 
-**1.** Connect to DC virtual machine and open PowerShell from start menu (or by right-clicking on Start button, and selecting run PowerShell as Administrator)
+**Step 1** Connect to DC virtual machine and open PowerShell from start menu (or by right-clicking on Start button, and selecting run PowerShell as Administrator)
 
 ![](./media/explorer01.png)
 
 
-**2.** In PowerShell paste following code to install management tools for Windows Server. Keep PowerShell open for next task.
+**Step 2** In PowerShell paste following code to install management tools for Windows Server. Keep PowerShell open for next task.
 
 ```PowerShell
 Install-WindowsFeature -Name RSAT-Clustering,RSAT-Clustering-Mgmt,RSAT-Clustering-PowerShell,RSAT-Hyper-V-Tools,RSAT-Feature-Tools-BitLocker-BdeAducExt,RSAT-Storage-Replica
  
 ```
 
-## Task02 - Perform Windows Update
+## Task 02 - Perform Windows Update
 
-**1.** Run following code to check minor os build number. Do not close PowerShell as same window should be used for entire lab.
+**Step 1** Run following code to check minor os build number. Do not close PowerShell as same window should be used for entire lab.
 
 ```PowerShell
 #Define servers as variable
@@ -98,7 +98,7 @@ $ComputersInfo | Select-Object PSComputerName,CurrentBuildNumber,UBR
 
 ![](./media/powershell02.png)
 
-**2.** To update servers, you can run following PowerShell command. It will download and install patch tuesday updates.
+**Step 2** To update servers, you can run following PowerShell command. It will download and install patch tuesday updates.
 
 ```PowerShell
 # create temporary virtual account to avoid double-hop issue while keeping secrets locally (unlike CredSSP)
@@ -133,7 +133,7 @@ Invoke-Command -ComputerName $servers -ScriptBlock {
 
 ![](./media/powershell03.png)
 
-**3.** Optional - you can now reboot and validate version again. It is not necessary as reboot will be done later after installing features.
+**Step 3** Optional - you can now reboot and validate version again. It is not necessary as reboot will be done later after installing features.
 
 ```PowerShell
 #Restart servers
@@ -150,9 +150,9 @@ $ComputersInfo | Select-Object PSComputerName,CurrentBuildNumber,UBR
 
 ![](./media/powershell04.png)
 
-## Task03 - Configure basic settings on servers
+## Task 03 - Configure basic settings on servers
 
-**1.** Run following PowerShell script to configure Memory Dump settings and High Performance power plan.
+**Step 1** Run following PowerShell script to configure Memory Dump settings and High Performance power plan.
 
 > note: following script will configure High Performance power plan only on Physical Hardware (does not make sense on VMs)
 
@@ -179,7 +179,7 @@ Invoke-Command -ComputerName $servers -ScriptBlock {
  
 ```
 
-**2.** Run following script to install features and restart computers
+**Step 2** Run following script to install features and restart computers
 
 > note: You can notice, that Hyper-V is installed with command "Enable-WindowsOptionalFeature". This will use DISM to push feature even it is not supported by hardware (in case it is nested, without exposing virtualization extensions)
 
@@ -208,7 +208,7 @@ Foreach ($Server in $Servers){
 
 ![](./media/powershell05.png)
 
-## Task04 - Configure Networking
+## Task 04 - Configure Networking
 
 This lab assumes you have 2 or more network adapters converged. It means traffic for Management,Storage and VMs is using the same physical adapters and is splitted in logic defined in vSwitch.
 
@@ -218,7 +218,7 @@ Best practices are covered in Microsoft Documentation http://aka.ms/ConvergedRDM
 
 You can also review deep dive into networking [MSLab scenario](https://github.com/microsoft/MSLab/tree/master/Scenarios/S2D%20and%20Networks%20deep%20dive) for more PowerShell examples.
 
-**1.** Disable unused adapters - run following PowerShell code. In Virtual Environment there just two. In real systems, there might me multiple as you can see on screenshot below. It is useful to disable those as in Server Manager it will show with APIPA if not disabled
+**Step 1** Disable unused adapters - run following PowerShell code. In Virtual Environment there just two. In real systems, there might me multiple as you can see on screenshot below. It is useful to disable those as in Server Manager it will show with APIPA if not disabled
 
 ```PowerShell
 #Define servers as variable
@@ -239,7 +239,7 @@ After (physical server)
 
 > note: there is still one APIPA address on physical server. It is iDRAC USB network adapter that is used by OMIMSWAC extension.
 
-**2.** First let's check if all fastest adapters support SR-IOV. If not, you can enable it in BIOS (not in iDRAC, has to be configured at interface level). If environment is virtual, script will return error as SRIOV is not available at all.
+**Step 2** First let's check if all fastest adapters support SR-IOV. If not, you can enable it in BIOS (not in iDRAC, has to be configured at interface level). If environment is virtual, script will return error as SRIOV is not available at all.
 
 > to learn more about SR-IOV here: https://docs.microsoft.com/en-us/windows-hardware/drivers/network/overview-of-single-root-i-o-virtualization--sr-iov- and here https://www.youtube.com/watch?v=w-NBulzW_zE
 
@@ -256,7 +256,7 @@ Output on real servers
 ![](./media/powershell06.png)
 
 
-**3.** Grab fastest adapters and create virtual switch (you can notice $SRIOVSupport variable that can be adjusted). Script will attempt to create SR-IOV enabled vSwitch. If SR-IOV is not available, it will fail only enabling it (to enable you will need to recreate switch)
+**Step 3** Grab fastest adapters and create virtual switch (you can notice $SRIOVSupport variable that can be adjusted). Script will attempt to create SR-IOV enabled vSwitch. If SR-IOV is not available, it will fail only enabling it (to enable you will need to recreate switch)
 
 > note: we can safely assume, that NICs used in converged setup will be the ones that are connected and are the fastest.
 
@@ -276,7 +276,7 @@ Invoke-Command -ComputerName $servers -ScriptBlock {
  
 ```
 
-**4.** To validate vSwitch and SR-IOV support you can run following command
+**Step 4** To validate vSwitch and SR-IOV support you can run following command
 
 ```PowerShell
 Get-VMSwitch -CimSession $Servers | Select-Object Name,IOV*,ComputerName
@@ -291,7 +291,7 @@ Physical servers with SR-IOV enabled in BIOS
 
 ![](./media/powershell08.png)
 
-**5.** Configure vNICs. Each server should have vNIC for management and then NICs for SMB traffic (same amount of physical NICs to distribute traffic). So let's rename management vNIC and create SMB NICs.
+**Step 5** Configure vNICs. Each server should have vNIC for management and then NICs for SMB traffic (same amount of physical NICs to distribute traffic). So let's rename management vNIC and create SMB NICs.
 
 ```PowerShell
 #rename Management vNIC first
@@ -309,7 +309,7 @@ foreach ($Server in $Servers){
  
 ```
 
-**6.** Validate vNICs that were just created. You should see one Management and one SMB per physical NIC (in this case SMB01 and SMB02 on each server)
+**Step 6** Validate vNICs that were just created. You should see one Management and one SMB per physical NIC (in this case SMB01 and SMB02 on each server)
 
 ```PowerShell
 Get-VMNetworkAdapter -CimSession $Servers -ManagementOS
@@ -318,7 +318,7 @@ Get-VMNetworkAdapter -CimSession $Servers -ManagementOS
 
 ![](./media/powershell09.png)
 
-**7.** Configure IP Addresses.
+**Step 7** Configure IP Addresses.
 
 > Let's assume that there will be two subnets. Each subnet will be used only in one switch. Same will apply for VLANs. Let's say VLAN 01, Subnet 172.16.1.0 for Switch 1 and VLAN 02, Subnet 172.16.2.0 for Switch 2
 
@@ -341,7 +341,7 @@ foreach ($Server in $Servers){
  
 ```
 
-**8.** Validate IP Addresses
+**Step 8** Validate IP Addresses
 
 > As you can see, there are two subnets. Each odd and even adapter has it's own subnet.
 
@@ -352,7 +352,7 @@ foreach ($Server in $Servers){
 
 ![](./media/powershell10.png)
 
-**9.** Configure VLANs.
+**Step 9** Configure VLANs.
 
 > It is best practice to configure storage NICs to use VLANs as it is needed for QoS to work correctly.
 
@@ -379,7 +379,7 @@ Get-NetAdapter -CimSession $Servers -Name "vEthernet (SMB*)" | Restart-NetAdapte
  
 ```
 
-**10.** Enable RDMA on vNICs
+**Step 10** Enable RDMA on vNICs
 
 ```PowerShell
 #Enable RDMA on the host vNIC adapters
@@ -387,7 +387,7 @@ Enable-NetAdapterRDMA -Name "vEthernet (SMB*)" -CimSession $Servers
  
 ```
 
-**11.** Configure vNICs to pNICs mapping
+**Step 11** Configure vNICs to pNICs mapping
 
 vNICs to pNICs mapping is important because of using both physical adapters. Without this, storage traffic could end up on one physical interface only.
 
@@ -408,7 +408,7 @@ Invoke-Command -ComputerName $servers -ScriptBlock {
  
 ```
 
-**12.** Configure Datacenter Bridging (QoS)
+**Step 12** Configure Datacenter Bridging (QoS)
 
 > Following script is configuring best practices as recommended by Microsoft in Network ATC guide https://docs.microsoft.com/en-us/azure-stack/hci/deploy/network-atc#default-data-center-bridging-dcb-configurationw
 
@@ -453,16 +453,16 @@ Result - Physical Servers
 
 ![](./media/powershell15.png)
 
-**13.** *If iWARP is used*, then Firewall Rule that allows iWARP traffic needs to be enabled
+**Step 13** *If iWARP is used*, then Firewall Rule that allows iWARP traffic needs to be enabled
 
 ```PowerShell
 Enable-NetFirewallRule -Name "FPSSMBD-iWARP-In-TCP" -CimSession $servers
  
 ```
 
-## Task05 - Validate Networking
+## Task 05 - Validate Networking
 
-**1.** Check Virtual Switches and virtual NICs
+**Step 1** Check Virtual Switches and virtual NICs
 
 ```PowerShell
 #validate vSwitch
@@ -474,7 +474,7 @@ Get-VMNetworkAdapter -CimSession $servers -ManagementOS
 
 ![](./media/powershell16.png)
 
-**2.** Check vNICs to pNICs mapping
+**Step 2** Check vNICs to pNICs mapping
 
 ```PowerShell
 #validate vNICs to pNICs mapping
@@ -490,7 +490,7 @@ Result - Physical Servers
 
 ![](./media/powershell18.png)
 
-**3.** Check JumboFrames setting
+**Step 3** Check JumboFrames setting
 
 > note: in this lab was default value used (1514).
 
@@ -509,7 +509,7 @@ Result - Physical Servers
 ![](./media/powershell20.png)
 
 
-**4.** Check RDMA Settings
+**Step 4** Check RDMA Settings
 
 ```PowerShell
 #verify RDMA settings
@@ -525,7 +525,7 @@ Result - real hardware
 
 ![](./media/powershell13.png)
 
-**5.** Check VLANs
+**Step 5** Check VLANs
 
 ```PowerShell
 #validate if VLANs were set
@@ -535,7 +535,7 @@ Get-VMNetworkAdapterVlan -CimSession $Servers -ManagementOS
 
 ![](./media/powershell11.png)
 
-**6.** Check IP Config
+**Step 6** Check IP Config
 
 ```PowerShell
 #verify ip config 
@@ -546,7 +546,7 @@ Get-NetIPAddress -CimSession $servers -InterfaceAlias vEthernet* -AddressFamily 
 ![](./media/powershell21.png)
 
 
-**7.** Check DCBX Settings
+**Step 7** Check DCBX Settings
 
 ```PowerShell
 #Validate DCBX setting
@@ -556,7 +556,7 @@ Invoke-Command -ComputerName $servers -ScriptBlock {Get-NetQosDcbxSetting} | Sor
 
 ![](./media/powershell22.png)
 
-**7.** Check QoS Policy
+**Step 7** Check QoS Policy
 
 > note: there will be no result in Virtual Machines
 
@@ -568,7 +568,7 @@ Invoke-Command -ComputerName $servers -ScriptBlock {Get-NetAdapterQos | Where-Ob
 
 ![](./media/powershell23.png)
 
-**8.** Check flow control settings
+**Step 8** Check flow control settings
 
 ```PowerShell
 #validate flow control setting
@@ -579,7 +579,7 @@ Invoke-Command -ComputerName $servers -ScriptBlock {Get-NetQosFlowControl} | Sor
 ![](./media/powershell24.png)
 
 
-**9.** Check QoS Traffic Classes
+**Step 9** Check QoS Traffic Classes
 
 ```PowerShell
 #validate QoS Traffic Classes
@@ -589,9 +589,9 @@ Invoke-Command -ComputerName $servers -ScriptBlock {Get-NetQosTrafficClass} |Sor
 
 ![](./media/powershell25.png)
 
-## Task06 - Create and configure Cluster
+## Task 06 - Create and configure Cluster
 
-**1.** Test if cluster is ready to be enabled and create cluster
+**Step 1** Test if cluster is ready to be enabled and create cluster
 
 > note: the PowerShell code below shows three examples how to create cluster. The most traditional way is to create cluster with static IP Address. The modern way is to use Distributed Domain Name. This way, there is no extra IP Needed and in DNS are each node IP addresses added to cluster name record.
 
@@ -631,11 +631,11 @@ if ($USBNics){
 
 * [Validation report -Physical Servers](./media/ValidationReportAX6515.htm)
 
-**2.** Configure witness
+**Step 2** Configure witness
 
 There are two options for witness - file share witness or Cloud Witness. Below you will find an example for both.
 
-**2.a** File Share Witness
+**Step 2.a** File Share Witness
 
 ```PowerShell
 #Configure Witness
@@ -656,7 +656,7 @@ There are two options for witness - file share witness or Cloud Witness. Below y
 
 ![](./media/cluadmin01.png)
 
-**2.b** or Configure Cloud Witness
+**Step 2.b** or Configure Cloud Witness
 
 ```PowerShell
 $ResourceGroupName="AzSHCICloudWitness"
@@ -697,7 +697,7 @@ Set-ClusterQuorum -Cluster $ClusterName -CloudWitness -AccountName $StorageAccou
 
 ![](./media/cluadmin02.png)
 
-**3.** Configure cluster networks
+**Step 3** Configure cluster networks
 
 ```PowerShell
 $Stornet1="172.16.1."
@@ -726,7 +726,7 @@ After (physical server)
 
 ![](./media/cluadmin04.png)
 
-**4.** Configure Live Migration settings
+**Step 4** Configure Live Migration settings
 
 Following Script will configure cluster network for Live Migration, configure this network to use SMB and will configure live migration limits - so live migration will not consume entire East-West bandwidth. And
 
@@ -753,9 +753,9 @@ After
 
 ![](./media/cluadmin06.png)
 
-## Task08 - Enable Storage Spaces Direct and create Volumes
+## Task 08 - Enable Storage Spaces Direct and create Volumes
 
-**1.** Delete pool (if the same physical disks were used Azure Stack HCI).
+**Step 1** Delete pool (if the same physical disks were used Azure Stack HCI).
 
 > This code will wipe spaces metadata from all disks that were previously used for spaces and are available to pool
 
@@ -788,7 +788,7 @@ if ($DeletePool){
  
 ```
 
-**2.** Enable Storage Spaces Direct
+**Step 2** Enable Storage Spaces Direct
 
 ```PowerShell
 #Enable-ClusterS2D
@@ -798,7 +798,7 @@ Enable-ClusterS2D -CimSession $ClusterName -confirm:0 -Verbose
 
 ![](./media/powershell26.png)
 
-**3.** Explore Pool and Tiers created
+**Step 3** Explore Pool and Tiers created
 
 ```PowerShell
 #display pool
@@ -816,7 +816,7 @@ Enable-ClusterS2D -CimSession $ClusterName -confirm:0 -Verbose
 
 ![](./media/powershell28.png)
 
-**4.** Calculate volume size first
+**Step 4** Calculate volume size first
 
 > Following script will do calculation what maximum size volume can be assuming you will use just 4 three-way mirror volumes across 4 nodes. As you can see, it will make it slightly smaller to keep reserve for Performance History volume and metadata
 
@@ -857,7 +857,7 @@ $sizeofvolumeonHDDs/1TB
 
 ![](./media/powershell29.png)
 
-**5.** Create volumes
+**Step 5** Create volumes
 
 > You can notice this script is universal and will work for both SSDs and HDDs capacity.
 
@@ -885,7 +885,7 @@ if ($ThinVolumes){
 
 ![](./media/powershell30.png)
 
-**6.** Check if volumes are thin provisioned
+**Step 6** Check if volumes are thin provisioned
 
 > There are two indicators that volumes are thin provisioned. With basic command get-virtualdisk you will notice much smaller footprint on pool
 
@@ -905,9 +905,9 @@ Get-VirtualDisk -CimSession $ClusterName | Select-Object FriendlyName,Provisioni
 
 ![](./media/powershell32.png)
 
-## Task09 - Register Azure Stack HCI cluster to Azure
+## Task 09 - Register Azure Stack HCI cluster to Azure
 
-**1.** Download prerequisites and log in into Azure
+**Step 1** Download prerequisites and log in into Azure
 
 > You can notice, that log in is using device authentication. This means you will not have to log in on the machine you are running script, but in another - like the one you trust.
 
@@ -942,7 +942,7 @@ Get-VirtualDisk -CimSession $ClusterName | Select-Object FriendlyName,Provisioni
 
 ![](./media/powershell34.png)
 
-**2** Register Azure Stack HCI without asking for credentials again and with Resource Group of your choice.
+**Step 2** Register Azure Stack HCI without asking for credentials again and with Resource Group of your choice.
 
 > Notice in following script, that you will be able to choose location for Azure Stack HCI based on availability.
 
@@ -971,7 +971,7 @@ Register-AzStackHCI -Region $Region -SubscriptionID $subscriptionID -ComputerNam
 
 ![](./media/powershell35.png)
 
-**3.** If arc registration fails - as per above example, you can explore logs with following PowerShell
+**Step 3** If arc registration fails - as per above example, you can explore logs with following PowerShell
 
 ![](./media/powershell36.png)
 
@@ -990,7 +990,7 @@ Register-AzStackHCI -Region $Region -SubscriptionID $subscriptionID -ComputerNam
 > Looks like the script attmpted to use different Resource Group than provided. 
 ![](./media/powershell37.png)
 
-**4.** To fix issue, let's provide initialize arc registration again
+**Step 4** To fix issue, let's provide initialize arc registration again
 
 ```PowerShell
 if (-not (Get-AzContext)){
@@ -1056,10 +1056,10 @@ Start-Sleep 20
 ![](./media/powershell38.png)
 
 
-## Task10 - Install Windows Admin Center and explore Azure Stack HCI Cluster
+## Task 10 - Install Windows Admin Center and explore Azure Stack HCI Cluster
 
 
-**1.** Download and Install Windows Admin Center
+**Step 1** Download and Install Windows Admin Center
 
 > Following example will use self-signed certificate. In production, you should use certificate from your certification authority. To learn more you can explore [Windows Admin Center MSLab Scenario](https://github.com/microsoft/MSLab/tree/master/Scenarios/Windows%20Admin%20Center%20and%20Enterprise%20CA)
 
@@ -1087,7 +1087,7 @@ $Session | Remove-PSSession
 
 ![](./media/powershell39.png)
 
-**3.** Make the self-signed certificate trusted
+**Step 3** Make the self-signed certificate trusted
 
 > Following script will download Windows Admin Certificate and will add it into trusted root certificates into local machine. In production you should use trusted certificates
 
@@ -1100,7 +1100,7 @@ Import-Certificate -FilePath $env:TEMP\WACCert.cer -CertStoreLocation Cert:\Loca
 
 ![](./media/powershell40.png)
 
-**4.** Configure Kerberos Constrained Delegation (to avoid providing credentials in WAC)
+**Step 4** Configure Kerberos Constrained Delegation (to avoid providing credentials in WAC)
 
 ```PowerShell
 #Configure Resource-Based constrained delegation on all Azure Stack HCI server object in AD
@@ -1114,19 +1114,19 @@ foreach ($computer in $computers){
 }
  
 ```
-**3.** Open Edge browser and navigate to https://wacgw
+**Step 3** Open Edge browser and navigate to https://wacgw
 
 > When prompted for credentials, use LabAdmin\LS1setup!
 
-**4.** To add Azure Stack Cluster, click on **+ Add** button and in Server clusters category click on Add
+**Step 4** To add Azure Stack Cluster, click on **+ Add** button and in Server clusters category click on Add
 
 ![](./media/edge01.png)
 
-**5.** Specify AzSHCI-Cluster and click Add
+**Step 5** Specify AzSHCI-Cluster and click Add
 
 ![](./media/edge02.png)
 
-**6.** Explore cluster
+**Step 6** Explore cluster
 
 ![](./media/edge03.png)
 

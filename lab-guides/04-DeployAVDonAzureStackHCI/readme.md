@@ -89,6 +89,15 @@ $SKU="win11-21h2-avd-m365"
 #location (all locations where HostPool can be created)
     $region=(Get-AzLocation | Where-Object Providers -Contains "Microsoft.DesktopVirtualization" | Out-GridView -OutputMode Single -Title "Please select Location for AVD Host Pool metadata").Location
 
+#register provider
+    $Provider="Microsoft.DesktopVirtualization"
+    Register-AzResourceProvider -ProviderNamespace $Provider
+    #wait for provider to finish registration
+    do {
+        $Status=Get-AzResourceProvider -ProviderNamespace $Provider
+        Write-Output "Registration Status - $Provider : $(($status.RegistrationState -match 'Registered').Count)/$($Status.Count)"
+        Start-Sleep 1
+    } while (($status.RegistrationState -match "Registered").Count -ne ($Status.Count))
 
 #Generate list of VMs to be created
     #Session hosts
@@ -217,7 +226,6 @@ Get-AzVMImage -Location $region -PublisherName "microsoftwindowsdesktop" -Offer 
 **Step 1** Let's work with image and export it into managed disk
 
 ```PowerShell
-#let's work with win11-21h2-avd-m365
     $image=Get-AzVMImage -Location $region -PublisherName  "microsoftwindowsdesktop" -Offer $Offer -SKU $SKU | Sort-Object Version -Descending |Select-Object -First 1
     $ImageVersionID = $image.id
 

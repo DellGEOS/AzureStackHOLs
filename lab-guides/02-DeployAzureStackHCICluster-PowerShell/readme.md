@@ -947,7 +947,7 @@ Get-VirtualDisk -CimSession $ClusterName | Select-Object FriendlyName,Provisioni
 > Notice in following script, that you will be able to choose location for Azure Stack HCI based on availability.
 
 ```PowerShell
-$ResourceGroupName="AzureStackHCIClusters"
+$ResourceGroupName="" #Optional, if not specified, default will be used
 if (!(Get-InstalledModule -Name Az.Resources -ErrorAction Ignore)){
     Install-Module -Name Az.Resources -Force
 }
@@ -965,7 +965,11 @@ $graphToken = $authFactory.Authenticate($azContext.Account, $azContext.Environme
 $armToken = $authFactory.Authenticate($azContext.Account, $azContext.Environment, $azContext.Tenant.Id, $null, [Microsoft.Azure.Commands.Common.Authentication.ShowDialog]::Never, $null, $armTokenItemResource).AccessToken
 $id = $azContext.Account.Id
 #Register-AzStackHCI -SubscriptionID $subscriptionID -ComputerName $ClusterName -GraphAccessToken $graphToken -ArmAccessToken $armToken -AccountId $id
-Register-AzStackHCI -Region $Region -SubscriptionID $subscriptionID -ComputerName  $ClusterName -GraphAccessToken $graphToken -ArmAccessToken $armToken -AccountId $id -ResourceName $ClusterName -ResourceGroupName $ResourceGroupName
+if ($ResourceGroupName){
+    Register-AzStackHCI -Region $Region -SubscriptionID $subscriptionID -ComputerName  $ClusterName -GraphAccessToken $graphToken -ArmAccessToken $armToken -AccountId $id -ResourceName $ClusterName -ResourceGroupName $ResourceGroupName
+}else{
+    Register-AzStackHCI -Region $Region -SubscriptionID $subscriptionID -ComputerName  $ClusterName -GraphAccessToken $graphToken -ArmAccessToken $armToken -AccountId $id -ResourceName $ClusterName
+}
  
 ```
 

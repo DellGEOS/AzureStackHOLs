@@ -323,4 +323,3 @@ Content of DSU log is displayed (only once install is running on node and log is
 ![](./media/edge03.png)
 
 ![](./media/edge04.png)
-

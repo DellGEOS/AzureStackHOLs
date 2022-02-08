@@ -42,11 +42,13 @@ To perform following lab you can setup cluster using guides below:
 
 > Note: Microsoft docs are documenting vmfleet image creation with manual steps including capturing state. In MSLab is helper script that helps creating vmfleet image from any other parent VHD.
 
-**Step 1** In MSLab folder, navigate into parentdisks folder and run CreateVMFleetDisk.ps1 by right-clicking it and selecting run with PowerShell
+**Step 1** In MSLab folder, navigate into parentdisks folder and run [CreateVMFleetDisk.ps1](https://github.com/microsoft/MSLab/blob/master/Tools/CreateVMFleetDisk.ps1) by right-clicking it and selecting run with PowerShell.
 
 ![](./media/explorer01.png)
 
 **Step 2** Script will ask for VHD. Since VMFleet requires Windows Server Core, you can provide Win2022Core_G2.vhdx.
+
+> Note: Windows Server Core VHD can be created using [CreateParentDisk.ps1](https://github.com/microsoft/MSLab/blob/master/Tools/CreateParentDisk.ps1). The similar process (but how to create Azure Stack HCI VHD) is described in [Hydrate MSLab guide](https://github.com/DellGEOS/AzureStackHOLs/tree/main/admin-guides/01-HydrateMSLab#task-4---create-azure-stack-hci-parent-disk)
 
 ![](./media/powershell01.png)
 

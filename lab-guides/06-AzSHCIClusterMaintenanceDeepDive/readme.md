@@ -607,7 +607,7 @@ $ScanResult
     foreach ($Node in $Nodes){
         #Install Dell updates https://dl.dell.com/content/manual36290092-dell-emc-system-update-version-1-9-3-0-user-s-guide.pdf?language=en-us&ps=true
         if (($ScanResult | Where-Object ComputerName -eq $node).DellUpdateRequired){
-            Write-Output "$($Node):Installing Dell System Updates"
+            Write-Output "$($Node): Installing Dell System Updates"
             Invoke-Command -ComputerName $Node -ScriptBlock {
                 #install DSU updates
                 Start-Process -FilePath "install.cmd" -Wait -WorkingDirectory $using:DSUPackageDownloadFolder
@@ -618,7 +618,7 @@ $ScanResult
 
         #install Microsoft updates
         if (($ScanResult | Where-Object ComputerName -eq $node).MicrosoftUpdateRequired){
-            Write-Output "$($Node):Installing Microsoft $Updates Updates"
+            Write-Output "$($Node): Installing Microsoft $Updates Updates"
             $MSUpdateInstallResult=Invoke-Command -ComputerName $Node -ConfigurationName 'VirtualAccount' {
                 $Searcher = New-Object -ComObject Microsoft.Update.Searcher
                 $SearchResult = $Searcher.Search($using:SearchCriteriaAllUpdates).Updates

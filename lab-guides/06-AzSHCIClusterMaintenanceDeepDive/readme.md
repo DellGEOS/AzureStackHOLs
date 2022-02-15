@@ -82,6 +82,8 @@ Get-VirtualDisk -CimSession $ClusterName
 
 **Step 5** Explore Storage Subsystem Status
 
+> Note: Subsystem will be likely unheathy if running in VMs. You can explore more with Get-HealthFault -CimSession $ClusterName
+
 ```PowerShell
 Get-StorageSubSystem -CimSession $ClusterName -FriendlyName "Clustered Windows Storage on $ClusterName"
  

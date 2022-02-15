@@ -1,8 +1,8 @@
-# Testing Performance with VMFleet
+# Testing Azure Stack HCI Performance with VMFleet
 
 <!-- TOC -->
 
-- [Testing Performance with VMFleet](#testing-performance-with-vmfleet)
+- [Testing Azure Stack HCI Performance with VMFleet](#testing-azure-stack-hci-performance-with-vmfleet)
     - [About the lab](#about-the-lab)
     - [Prerequsites](#prerequsites)
     - [Task 01 - Create vmfleet image](#task-01---create-vmfleet-image)
@@ -14,7 +14,7 @@
 
 ## About the lab
 
-In this lab you will learn about how to test performance of Azure Stack HCI cluster with VMFleet 2.0
+In this lab you will learn about how to test performance of Azure Stack HCI cluster with VMFleet 2.045
 
 The lab is based on [AzSHCI and VMFleet](https://github.com/microsoft/MSLab/tree/dev/Scenarios/AzSHCI%20and%20VMFleet) MSLab scenario.
 
@@ -206,7 +206,7 @@ Expected result
 
 ![](./media/cluadmin02.png)
 
-**Step 4** Copy PrivateCloud.DiagnosticInfo PowerShell modules to cluster nodes
+**Step 4** Copy PrivateCloud.DiagnosticInfo PowerShell module to cluster nodes
 
 ```PowerShell
     $Sessions=New-PSSession $Nodes

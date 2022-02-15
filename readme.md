@@ -21,3 +21,4 @@ Guides focused at deploying and operation of Azure Stack HCI Clusters
 * [03 Explore OpenManage Extension for Windows Admin Center](lab-guides/03-OpenManageExtensionForWAC/readme.md)
 * [04 Deploy Azure Virtual Desktop on Azure Stack HCI Cluster](lab-guides/04-DeployAVDonAzureStackHCI/readme.md)
 * [05 Test Azure Stack HCI performance with VMFleet](lab-guides/05-TestPerformanceWithVMFleet/readme.md)
+* [06 Explore Azure Stack HCI Cluster Maintenance (Deep Dive)](lab-guides/06-AzSHCIClusterMaintenanceDeepDive/readme.md)

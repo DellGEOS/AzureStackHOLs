@@ -221,6 +221,8 @@ Expand-GZipArchive "$env:UserProfile\Downloads\ASHCI-Catalog.xml.gz" "$env:UserP
  
 ```
 
+![](./media/explorer02.png)
+
 **Step 4** Distribute DSU and catalog to nodes
 
 ```PowerShell

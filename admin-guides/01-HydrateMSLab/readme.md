@@ -32,9 +32,9 @@ Optionally you can setup VM in Azure Virtual Machine.
 
 ## Task 2 - Download all necessary files
 
-In this task you will download all necessary files required to setup [MSLab](aka.ms/mslab).
+In this task you will download all necessary files required to setup [MSLab](https://aka.ms/mslab).
 
-**1.** Download MSLab scripts by navigating to [MSLab Download](http://aka.ms/mslab/download)
+**1.** Download MSLab scripts by navigating to [MSLab Download](https://aka.ms/mslab/download)
 
 **2.** Dowload latest Windows Server ISO - either from [MSDN Downloads](https://my.visualstudio.com/downloads), [Eval Center](https://www.microsoft.com/en-us/evalcenter/evaluate-windows-server-2022) or [VLSC Portal](https://www.microsoft.com/licensing/servicecenter)
 

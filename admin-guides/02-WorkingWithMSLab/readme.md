@@ -91,7 +91,7 @@ To add more VMs you can simply edit LabConfig.ps1 and add more records into $Lab
 **1.** Open LabConfig.ps1 in notepad and add replace content with following code
 
 ```PowerShell
-$LabConfig=@{ Internet=$true; DomainAdminName='LabAdmin'; AdminPassword='LS1setup!'; DomainNetbiosName="Dell"; DomainName="Dell.lab"; VMs=@()}
+$LabConfig=@{ Internet=$true; DomainAdminName='LabAdmin'; AdminPassword='LS1setup!'; VMs=@()}
 
 1..4 | ForEach-Object {$VMNames="AzSHCI"; $LABConfig.VMs += @{ VMName = "$VMNames$_" ; Configuration = 'S2D' ; ParentVHD = 'AzSHCI21H2_G2.vhdx'; HDDNumber = 4; HDDSize= 4TB ; MemoryStartupBytes= 1GB }}
 

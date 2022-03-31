@@ -43,7 +43,7 @@
 **2.** Navigate to MSLab folder and replace LabConfig.ps1 with following. Notice SwitchNics and it's NICs - those are the ones identified in step 1.
 
 ```PowerShell
-$LabConfig=@{SwitchNics="NIC1","NIC2"; Internet=$true ; UseHostDnsAsForwarder=$true; DomainAdminName='LabAdmin'; AdminPassword='LS1setup!' ; VMs=@()}
+$LabConfig=@{SwitchNics="NIC1","NIC2"; Internet=$true ; UseHostDnsAsForwarder=$true; DomainAdminName='LabAdmin'; AdminPassword='LS1setup!' ; DCEdition='4' ;VMs=@()}
 
 $LabConfig.VMs += @{ VMName = 'Management' ; ParentVHD = 'Win2022_G2.vhdx' ; MGMTNICs=1 }
 

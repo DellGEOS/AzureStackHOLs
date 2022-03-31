@@ -15,7 +15,7 @@
         - [Clustering](#clustering)
         - [Storage](#storage)
         - [SDN](#sdn)
-    - [Connect to Cluster](#connect-to-cluster)
+    - [Task 03 - Connect to Cluster](#task-03---connect-to-cluster)
 
 <!-- /TOC -->
 

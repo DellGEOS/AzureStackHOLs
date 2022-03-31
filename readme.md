@@ -11,6 +11,7 @@ Guides, that focuses at how to deploy and operate labs.
 * [01 How to Hydrate MSLab files](admin-guides/01-HydrateMSLab/readme.md)
 * [02 Working with MSLab](admin-guides/02-WorkingWithMSLab/readme.md)
 * [03 Deploy Physical Servers with MSLab](admin-guides/03-DeployPhysicalServersWithMSLab/readme.md)
+* [04 How to Hydrate MSLab files with SCVMM](admin-guides/04-HydrateMSLab%2BSCVMM/readme.md)
 
 # Lab guides
 

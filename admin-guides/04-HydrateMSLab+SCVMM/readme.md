@@ -1,8 +1,8 @@
-# Admin Lab 01 - Hydrating MSLab
+# Admin Lab 04 - Hydrating MSLab with SCVMM
 
 <!-- TOC -->
 
-- [Admin Lab 01 - Hydrating MSLab](#admin-lab-01---hydrating-mslab)
+- [Admin Lab 04 - Hydrating MSLab with SCVMM](#admin-lab-04---hydrating-mslab-with-scvmm)
     - [Lab overview](#lab-overview)
     - [Task 1 - Check hardware requirements](#task-1---check-hardware-requirements)
     - [Task 2 - Download all necessary files](#task-2---download-all-necessary-files)

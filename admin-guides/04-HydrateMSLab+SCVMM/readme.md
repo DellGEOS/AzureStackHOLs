@@ -46,7 +46,7 @@ In this task you will download all necessary files required to setup [MSLab](htt
 
 **5.** Download [Windows PE add-on for ADK](https://go.microsoft.com/fwlink/?linkid=2166133)
 
-**6.** Download [SQL 2019 Eval](https://www.microsoft.com/en-us/evalcenter/evaluate-sql-server-2019)msdn downloads
+**6.** Download [SQL 2019 Eval](https://www.microsoft.com/en-us/evalcenter/evaluate-sql-server-2019)
 
 **7.** Download [System Center 2022 Eval](https://www.microsoft.com/en-us/evalcenter/evaluate-system-center-2022)
 

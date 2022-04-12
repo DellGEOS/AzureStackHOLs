@@ -30,7 +30,11 @@
 
 > Minimal footprint is 2 servers, laptop and simple switch that will provide connectivity for physical servers and iDRAC interfaces.
 
-![](./media/minimumfootprint01.png)
+> Scalable topology is what we have in the lab
+
+![](./media/topology01.png)
+
+![](./media/topology02.png)
 
 ## Deploy MSLab VMs
 

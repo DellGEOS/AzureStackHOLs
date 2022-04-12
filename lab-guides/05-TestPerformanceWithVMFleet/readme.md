@@ -232,7 +232,7 @@ Expected result
 
 ![](./media/explorer06.png)
 
-**Step 6** Explore performance results by copying result.tsv to a computer, where excel is installed. Open result in excel and insert a table. You can review [sample result](./media/AX6515-All-Flash-4xSSD-64VMs-2Node.txt). 
+**Step 6** Explore performance results by copying result.tsv to a computer, where excel is installed. Open result in excel and insert a table. You can review [sample result](./media/AX6515-All-Flash-4xSSD-32VMs-2Node.txt). 
 
 ![](./media/excel01.png)
 

@@ -8,12 +8,13 @@
     - [LabConfig](#labconfig)
     - [Task 01 - Create a single-node Azure Stack HCI cluster](#task-01---create-a-single-node-azure-stack-hci-cluster)
     - [Task 02 - Expand cluster 1node->2node](#task-02---expand-cluster-1node-2node)
+    - [Task 03 - Expand cluster 2node->3+node](#task-03---expand-cluster-2node-3node)
 
 <!-- /TOC -->
 
 ## About the lab
 
-This lab will help you understand how to deploy a single-node cluster and how to expand it to 2node cluster and also how to expand 2 node to 3+ node cluster.
+This lab will help you understand how to deploy a single-node cluster and how to expand it to 2node cluster and also how to expand 2 node to 3+ node cluster. It's bit deep dive, and it's intended for experts.
 
 This lab is not going into every detail (there might be another settings that needs to be pushed to hosts such as security settings, agents, ...). For end-to-end setup review [MSLab Azure Stack HCI deployment scenario](https://github.com/microsoft/MSLab/tree/master/Scenarios/AzSHCI%20Deployment).
 
@@ -273,7 +274,7 @@ New-Volume -CimSession $ClusterName -StoragePoolFriendlyName "S2D on $ClusterNam
 
 ## Task 02 - Expand cluster (1node->2node)
 
-This lab assumes moving from one node (connected with one cable to physical switch) to 2 node cluster with converged networking. Therefore it involves connecting second pNIC into vSwitch on first node and configure converged networking on both nodes (adding vNICs for SMB and configuring RDMA)
+This task assumes moving from one node (connected with one cable to physical switch) to 2 node cluster with converged networking. Therefore it involves connecting second pNIC into vSwitch on first node and configure converged networking on both nodes (adding vNICs for SMB and configuring RDMA)
 
 **Step 1** Install roles and features on second node
 
@@ -592,7 +593,7 @@ Get-VirtualDisk -CimSession $ClusterName | Select-Object FriendlyName,FaultDomai
 
 ![](./media/powershell11.png)
 
-**Step 12 Move VM(s) to new volume
+**Step 12** Move VM(s) to new volume
 
 ```PowerShell
 #config
@@ -608,3 +609,221 @@ foreach ($VM in $VMs){
 ```
 
 ![](./media/cluadmin03.png)
+
+## Task 03 - Expand cluster (2node->3+node)
+
+This task assumes that you are expanding two node cluster configured with converged networking with one or more nodes
+
+**Step 1** Install roles and features to node(s)
+
+```PowerShell
+#Config
+$Servers="Exp3"#,"Exp4"
+# Install features on server(s)
+Invoke-Command -ComputerName $Servers -ScriptBlock {
+    Enable-WindowsOptionalFeature -FeatureName Microsoft-Hyper-V -Online -NoRestart 
+    Install-WindowsFeature -Name "Failover-Clustering","RSAT-Clustering-Powershell","Hyper-V-PowerShell"
+}
+
+# restart server(s)
+Restart-Computer -ComputerName $Servers -Protocol WSMan -Wait -For PowerShell
+#failsafe - sometimes it evaluates, that servers completed restart after first restart (hyper-v needs 2)
+Start-sleep 20
+#make sure computers are restarted
+Foreach ($Server in $Servers){
+    do{$Test= Test-NetConnection -ComputerName $Server -CommonTCPPort WINRM}while ($test.TcpTestSucceeded -eq $False)
+}
+ 
+```
+
+**Step 2** Configure networking
+
+> Note: Another paste and forget region. It's same as in Task02, but multiple steps combined (SMB vNICs, VLANs, IP Addresses). You can adjust start IP - it assumes first 2 IP addresses are taken with first 2 nodes and start with IP 3.
+
+```PowerShell
+#Config
+$Servers="Exp3"#,"Exp4"
+$ClusterName="Exp-Cluster"
+$vSwitchName="vSwitch"
+$IP=3 #start IP
+$StorNet1="172.16.1."
+$StorNet2="172.16.2."
+$StorVLAN1=1
+$StorVLAN2=2
+
+#create vSwitch on third node
+Invoke-Command -ComputerName $Servers -ScriptBlock {
+    #create vSwitch
+    $NetAdapterNames=(Get-NetAdapter | Where-Object HardwareInterface -eq $True | Where-Object Status -eq UP | Sort-Object InterfaceAlias).InterfaceAlias
+    New-VMSwitch -Name $using:vSwitchName -EnableEmbeddedTeaming $TRUE -NetAdapterName $NetAdapterNames -EnableIov $true
+    #rename vNIC
+    Rename-VMNetworkAdapter -ManagementOS -Name $using:vSwitchName -NewName Management
+}
+
+#add SMB vNICs and configure IP
+Foreach ($Server in $Servers){
+    #grab number of physical nics connected to vswitch
+    $SMBvNICsCount=(Get-VMSwitch -CimSession $Server -Name $vSwitchName).NetAdapterInterfaceDescriptions.Count
+
+    #create SMB vNICs
+    foreach ($number in (1..$SMBvNICsCount)){
+        $TwoDigitNumber="{0:D2}" -f $Number
+        Add-VMNetworkAdapter -ManagementOS -Name "SMB$TwoDigitNumber" -SwitchName $vSwitchName -CimSession $Server
+    }
+
+    #assign IP Adresses
+    foreach ($number in (1..$SMBvNICsCount)){
+        $TwoDigitNumber="{0:D2}" -f $Number
+        if ($number % 2 -eq 1){
+            New-NetIPAddress -IPAddress ($StorNet1+$IP.ToString()) -InterfaceAlias "vEthernet (SMB$TwoDigitNumber)" -CimSession $Server -PrefixLength 24
+        }else{
+            New-NetIPAddress -IPAddress ($StorNet2+$IP.ToString()) -InterfaceAlias "vEthernet (SMB$TwoDigitNumber)" -CimSession $Server -PrefixLength 24
+            $IP++
+        }
+    }
+}
+
+#configure VLANs
+    #configure Odds and Evens for VLAN1 and VLAN2
+    Invoke-Command -ComputerName $Servers -ScriptBlock {
+        $NetAdapters=Get-VMNetworkAdapter -ManagementOS -Name *SMB* | Sort-Object Name
+        $i=1
+        foreach ($NetAdapter in $NetAdapters){
+            if (($i % 2) -eq 1){
+                Set-VMNetworkAdapterVlan -VMNetworkAdapterName $NetAdapter.Name -VlanId $using:StorVLAN1 -Access -ManagementOS
+                $i++
+            }else{
+                Set-VMNetworkAdapterVlan -VMNetworkAdapterName $NetAdapter.Name -VlanId $using:StorVLAN2 -Access -ManagementOS
+                $i++
+            }
+        }
+    }
+    #restart adapters so VLAN is active
+    Get-NetAdapter -CimSession $Servers -Name "vEthernet (SMB*)" | Restart-NetAdapter
+
+#configure RDMA and DCB
+    #Enable RDMA on the host vNIC adapters
+        Enable-NetAdapterRDMA -Name "vEthernet (SMB*)" -CimSession $Servers
+
+    #Associate each of the vNICs configured for RDMA to a physical adapter that is up and is not virtual (to be sure that each RDMA enabled ManagementOS vNIC is mapped to separate RDMA pNIC)
+        Invoke-Command -ComputerName $Servers -ScriptBlock {
+            #grab adapter names
+            $physicaladapternames=(get-vmswitch $using:vSwitchName).NetAdapterInterfaceDescriptions
+            #map pNIC and vNICs
+            $vmNetAdapters=Get-VMNetworkAdapter -Name "SMB*" -ManagementOS
+            $i=0
+            foreach ($vmNetAdapter in $vmNetAdapters){
+                $TwoDigitNumber="{0:D2}" -f ($i+1)
+                Set-VMNetworkAdapterTeamMapping -VMNetworkAdapterName "SMB$TwoDigitNumber" -ManagementOS -PhysicalNetAdapterName (get-netadapter -InterfaceDescription $physicaladapternames[$i]).name
+                $i++
+            }
+        }
+
+    #Install DCB
+        Invoke-Command -ComputerName $Servers -ScriptBlock {
+            Install-WindowsFeature -Name "Data-Center-Bridging"
+        }
+
+    #Configure QoS
+        New-NetQosPolicy "SMB"       -NetDirectPortMatchCondition 445 -PriorityValue8021Action 3 -CimSession $servers
+        New-NetQosPolicy "ClusterHB" -Cluster                         -PriorityValue8021Action 7 -CimSession $servers
+        New-NetQosPolicy "Default"   -Default                         -PriorityValue8021Action 0 -CimSession $servers
+
+    #Turn on Flow Control for SMB
+        Invoke-Command -ComputerName $servers -ScriptBlock {Enable-NetQosFlowControl -Priority 3}
+
+    #Disable flow control for other traffic than 3 (pause frames should go only from prio 3)
+        Invoke-Command -ComputerName $servers -ScriptBlock {Disable-NetQosFlowControl -Priority 0,1,2,4,5,6,7}
+
+    #Disable Data Center bridging exchange (disable accept data center bridging (DCB) configurations from a remote device via the DCBX protocol, which is specified in the IEEE data center bridging (DCB) standard.)
+        Invoke-Command -ComputerName $servers -ScriptBlock {Set-NetQosDcbxSetting -willing $false -confirm:$false}
+
+    #Configure IeeePriorityTag
+        #IeePriorityTag needs to be On if you want tag your nonRDMA traffic for QoS. Can be off if you use adapters that pass vSwitch (both SR-IOV and RDMA bypasses vSwitch)
+        Invoke-Command -ComputerName $servers -ScriptBlock {Set-VMNetworkAdapter -ManagementOS -Name "SMB*" -IeeePriorityTag on}
+
+    #Apply policy to the target adapters.  The target adapters are adapters connected to vSwitch
+        Invoke-Command -ComputerName $servers -ScriptBlock {Enable-NetAdapterQos -InterfaceDescription (Get-VMSwitch).NetAdapterInterfaceDescriptions}
+
+    #Create a Traffic class and give SMB Direct 50% of the bandwidth minimum. The name of the class will be "SMB".
+    #This value needs to match physical switch configuration. Value might vary based on your needs.
+    #If connected directly (in 2 node configuration) skip this step.
+        Invoke-Command -ComputerName $servers -ScriptBlock {New-NetQosTrafficClass "SMB"       -Priority 3 -BandwidthPercentage 50 -Algorithm ETS}
+        Invoke-Command -ComputerName $servers -ScriptBlock {New-NetQosTrafficClass "ClusterHB" -Priority 7 -BandwidthPercentage 1 -Algorithm ETS}
+ 
+```
+
+**Step 3** Add cluster member(s)
+
+```PowerShell
+#Config
+$ClusterName="Exp-Cluster"
+$ClusterNodeNames="Exp3"#,"Exp4"
+#add node(s)
+Add-ClusterNode -Name $ClusterNodeNames -Cluster $ClusterName
+ 
+```
+
+![](./media/cluadmin04.png)
+
+**Step 4** Adjust ResiliencySettingNameDefault to have 3 data copies and create 3-way mirror volume
+
+```PowerShell
+#config
+$ClusterName="Exp-Cluster"
+$VolumeFriendlyName="Three+NodesMirror"
+$VolumeSize=1TB
+
+#check configuration of mirror resiliency setting (notice 2 data copies)
+Get-StoragePool -CimSession $ClusterName -FriendlyName "S2D on $ClusterName" | get-resiliencysetting
+
+#configure Mirror ResiliencySetting
+Get-StoragePool -CimSession $ClusterName -FriendlyName "S2D on $ClusterName" | get-resiliencysetting -Name Mirror | Set-ResiliencySetting -NumberOfDataCopiesDefault 3
+
+#once configured, you will see that NumberOfDatacopies will be 3 with FaultDomainRedundancy2 (2 faults possible)
+Get-StoragePool -CimSession $ClusterName -FriendlyName "S2D on $ClusterName" | get-resiliencysetting -Name Mirror
+
+#create new volume
+New-Volume -CimSession $ClusterName -StoragePoolFriendlyName "S2D on $ClusterName" -FriendlyName $VolumeFriendlyName -Size $VolumeSize -ProvisioningType Thin
+
+#validate volume resiliency
+Get-VirtualDisk -CimSession $ClusterName | Select-Object FriendlyName,NumberOfDataCopies
+ 
+```
+
+![](./media/powershell12.png)
+
+**Step 5** Recreate cluster performance history volume
+
+```PowerShell
+#config
+$ClusterName="Exp-Cluster"
+
+#delete performance history including volume (without invoking it returned error "get-srpartnership : The WS-Management service cannot process the request. The CIM namespace")
+Invoke-Command -ComputerName $CLusterName -ScriptBlock {Stop-ClusterPerformanceHistory -DeleteHistory}
+#recreate performance history
+Start-ClusterPerformanceHistory -cimsession $ClusterName
+
+#validate volume resiliency again (takes some time to recreate volume)
+Get-VirtualDisk -CimSession $ClusterName | Select-Object FriendlyName,NumberOfDataCopies
+ 
+```
+
+![](./media/powershell13.png)
+
+**Step 6** Move VMs to new volume
+
+```PowerShell
+#config
+$ClusterName="Exp-Cluster"
+$VolumeFriendlyName="Three+NodesMirror"
+$DestinationStoragePath="c:\ClusterStorage\$VolumeFriendlyName"
+
+$VMs=Get-VM -CimSession (Get-ClusterNode -Cluster $ClusterName).Name
+foreach ($VM in $VMs){
+    $VM | Move-VMStorage -DestinationStoragePath "$DestinationStoragePath\$($VM.Name)"
+}
+ 
+```
+
+![](./media/cluadmin05.png)

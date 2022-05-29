@@ -2,7 +2,7 @@
 
 This repository will provide hands-on-lab guides for setting up Azure Stack HCI on almost any machine using [MSLab](https://aka.ms/mslab).
 
-You will learn how to deploy your own lab evironment - in your laptop, server, in Azure or how to deploy Azure Stack HCI Hardware.
+You will learn how to deploy your own lab environment - in your laptop, server, in Azure or how to deploy Azure Stack HCI Hardware.
 
 # Admin guides
 

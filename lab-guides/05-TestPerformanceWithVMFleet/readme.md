@@ -30,13 +30,13 @@ The main prerequisite is to have Azure Stack HCI cluster where you can deploy VM
 
 To perform following lab you can setup cluster using guides below:
 
-* Hydrate MSLab with LabConfig from [01-HydrateMSLab](admin-guides/01-HydrateMSLab/readme.md)
+* Hydrate MSLab with LabConfig from [01-HydrateMSLab](https://github.com/DellGEOS/AzureStackHOLs/tree/main/admin-guides/01-HydrateMSLab/readme.md)
 
-* [Learn How MSLab works](admin-guides/02-WorkingWithMSLab/readme.md)
+* [Learn How MSLab works](https://github.com/DellGEOS/AzureStackHOLs/tree/main/admin-guides/02-WorkingWithMSLab/readme.md)
 
-* [Deploy OS on hardware](admin-guides/03-DeployPhysicalServersWithMSLab/readme.md)
+* [Deploy OS on hardware](https://github.com/DellGEOS/AzureStackHOLs/tree/main/admin-guides/03-DeployPhysicalServersWithMSLab/readme.md)
 
-* [Deploy Azure Stack HCI with PowerShell](lab-guides/02-DeployAzureStackHCICluster-PowerShell/readme.md)
+* [Deploy Azure Stack HCI with PowerShell](https://github.com/DellGEOS/AzureStackHOLs/tree/main/lab-guides/02-DeployAzureStackHCICluster-PowerShell/readme.md)
 
 ## Task 01 - Create vmfleet image
 

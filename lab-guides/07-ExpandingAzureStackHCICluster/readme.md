@@ -24,9 +24,9 @@ The lab is based on [AzSHCI and Cluster Expansion](https://github.com/microsoft/
 
 To perform following lab you should know how to operate MSLab:
 
-* Hydrate MSLab with LabConfig from [01-HydrateMSLab](admin-guides/01-HydrateMSLab/readme.md)
+* Hydrate MSLab [01-HydrateMSLab](https://github.com/DellGEOS/AzureStackHOLs/tree/main/admin-guides/01-HydrateMSLab/readme.md)
 
-* [Learn How MSLab works](admin-guides/02-WorkingWithMSLab/readme.md)
+* [02-Learn How MSLab works](https://github.com/DellGEOS/AzureStackHOLs/tree/main/admin-guides/02-WorkingWithMSLab/readme.md)
 
 ## LabConfig
 
@@ -97,11 +97,11 @@ $Server="Exp1"
 $vSwitchName="vSwitch"
 
 # create vSwitch from first connected NIC
-$NetAdapterName=(Get-NetAdapter -Cimsession $Server | Where-Object HardwareInterface -eq $True | Where-Object Status -eq UP | Sort-Object InterfaceAlias | Select-Object -First 1).InterfaceAlias
-New-VMSwitch -Cimsession $Server -Name $vSwitchName -EnableEmbeddedTeaming $TRUE -NetAdapterName $NetAdapterName -EnableIov $true
+$NetAdapterName=(Get-NetAdapter -CimSession $Server | Where-Object HardwareInterface -eq $True | Where-Object Status -eq UP | Sort-Object InterfaceAlias | Select-Object -First 1).InterfaceAlias
+New-VMSwitch -CimSession $Server -Name $vSwitchName -EnableEmbeddedTeaming $TRUE -NetAdapterName $NetAdapterName -EnableIov $true
 
 #rename vNIC
-Rename-VMNetworkAdapter -Cimsession $Server -ManagementOS -Name $vSwitchName -NewName Management
+Rename-VMNetworkAdapter -CimSession $Server -ManagementOS -Name $vSwitchName -NewName Management
  
 ```
 
@@ -328,9 +328,9 @@ $vSwitchName="vSwitch"
 
 #create vSwitch
 $NetAdapterNames=(Get-NetAdapter -CimSession $SecondNodeName | Where-Object HardwareInterface -eq $True | Where-Object Status -eq UP | Sort-Object InterfaceAlias).InterfaceAlias
-New-VMSwitch -Cimsession $SecondNodeName -Name $vSwitchName -EnableEmbeddedTeaming $True -NetAdapterName $NetAdapterNames -EnableIov $true
+New-VMSwitch -CimSession $SecondNodeName -Name $vSwitchName -EnableEmbeddedTeaming $True -NetAdapterName $NetAdapterNames -EnableIov $true
 #rename vNIC
-Rename-VMNetworkAdapter -Cimsession $SecondNodeName -ManagementOS -Name $vSwitchName -NewName Management
+Rename-VMNetworkAdapter -CimSession $SecondNodeName -ManagementOS -Name $vSwitchName -NewName Management
  
 ```
 
@@ -584,7 +584,7 @@ $ClusterName="Exp-Cluster"
 #delete performance history including volume (without invoking it returned error "get-srpartnership : The WS-Management service cannot process the request. The CIM namespace")
 Invoke-Command -ComputerName $CLusterName -ScriptBlock {Stop-ClusterPerformanceHistory -DeleteHistory}
 #recreate performance history
-Start-ClusterPerformanceHistory -cimsession $ClusterName
+Start-ClusterPerformanceHistory -CimSession $ClusterName
 
 #validate volume fault domain awareness again (takes some time to recreate volume)
 Get-VirtualDisk -CimSession $ClusterName | Select-Object FriendlyName,FaultDomainAwareness
@@ -802,7 +802,7 @@ $ClusterName="Exp-Cluster"
 #delete performance history including volume (without invoking it returned error "get-srpartnership : The WS-Management service cannot process the request. The CIM namespace")
 Invoke-Command -ComputerName $CLusterName -ScriptBlock {Stop-ClusterPerformanceHistory -DeleteHistory}
 #recreate performance history
-Start-ClusterPerformanceHistory -cimsession $ClusterName
+Start-ClusterPerformanceHistory -CimSession $ClusterName
 
 #validate volume resiliency again (takes some time to recreate volume)
 Get-VirtualDisk -CimSession $ClusterName | Select-Object FriendlyName,NumberOfDataCopies

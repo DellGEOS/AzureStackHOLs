@@ -114,9 +114,11 @@ Import-Certificate -FilePath $env:TEMP\WACCert.cer -CertStoreLocation Cert:\Loca
 >Username:corp\LabAdmin
 Password:LS1setup!
 
+> ⚠️ If you have issues validating the install.  Head over to your Gateway server and reboot it. Once you have rebooted the validation will work correctly. ⚠️
+
 ![](./media/edge01.png)
 
-> ⚠️ If you have issues validating the install.  Head over to your Gateway server and reboot it. Once you have rebooted the validation will work correctly. ⚠️
+
 
 **Step 5** In Windows Admin Center in Gateway mode it is very useful to configure Kerberos Constrained Delegation for not to be asked for credentials when connecting to remote server - in this case Azure Stack HCI OS. To do it in PowerShell, you can use following code.
 

@@ -116,6 +116,8 @@ Password:LS1setup!
 
 ![](./media/edge01.png)
 
+> ⚠️ If you have issues validating the install.  Head over to your Gateway server and reboot it. Once you have rebooted the validation will work correctly. ⚠️
+
 **Step 5** In Windows Admin Center in Gateway mode it is very useful to configure Kerberos Constrained Delegation for not to be asked for credentials when connecting to remote server - in this case Azure Stack HCI OS. To do it in PowerShell, you can use following code.
 
 ```PowerShell
@@ -192,6 +194,8 @@ Invoke-Command -ComputerName $Servers -ScriptBlock {Enable-WindowsOptionalFeatur
 ![](./media/edge09.png)
 
 **Step 7** At Install updates page, click on **Install updates**. Once finished, click on Next
+
+> ⚠️ If you receive an error message trying to install updates, try rebooting your AzSHCI servers, and then try the updates again. ⚠️ 
 
 ![](./media/edge10.png)
 

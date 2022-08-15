@@ -298,6 +298,8 @@ Once finished, click on **Next: Storage**
 ![](./media/edge34.png)
 
 **Step 4** On Enable Storage Spaces Direct page, click Enable.
+> ⚠️ If you have issues enabled Storage Spaces Direct.  Reboot your AzSHCI servers, and then try again. ⚠️
+
 
 Once finished, click on Next: SDN
 

@@ -30,13 +30,13 @@ The main prerequisite is to have Azure Stack HCI cluster where you can deploy VM
 
 To perform following lab you can setup cluster using guides below:
 
-* Hydrate MSLab with LabConfig from [01-HydrateMSLab](https://github.com/DellGEOS/AzureStackHOLs/tree/main/admin-guides/01-HydrateMSLab/readme.md)
+* Hydrate MSLab with LabConfig from [01-HydrateMSLab](../../admin-guides/01-HydrateMSLab/readme.md)
 
-* [Learn How MSLab works](https://github.com/DellGEOS/AzureStackHOLs/tree/main/admin-guides/02-WorkingWithMSLab/readme.md)
+* [Learn How MSLab works](../../admin-guides/02-WorkingWithMSLab/readme.md)
 
-* [Deploy OS on hardware](https://github.com/DellGEOS/AzureStackHOLs/tree/main/admin-guides/03-DeployPhysicalServersWithMSLab/readme.md)
+* [Deploy OS on hardware](../../admin-guides/03-DeployPhysicalServersWithMSLab/readme.md)
 
-* [Deploy Azure Stack HCI with PowerShell](https://github.com/DellGEOS/AzureStackHOLs/tree/main/lab-guides/02-DeployAzureStackHCICluster-PowerShell/readme.md)
+* [Deploy Azure Stack HCI with PowerShell](../../lab-guides/02-DeployAzureStackHCICluster-PowerShell/readme.md)
 
 ## Task 01 - Create vmfleet image
 
@@ -48,7 +48,7 @@ To perform following lab you can setup cluster using guides below:
 
 **Step 2** Script will ask for VHD. Since VMFleet requires Windows Server Core, you can provide Win2022Core_G2.vhdx.
 
-> Note: Windows Server Core VHD can be created using [CreateParentDisk.ps1](https://github.com/microsoft/MSLab/blob/master/Tools/CreateParentDisk.ps1). The similar process (but how to create Azure Stack HCI VHD) is described in [Hydrate MSLab guide](https://github.com/DellGEOS/AzureStackHOLs/tree/main/admin-guides/01-HydrateMSLab#task-4---create-azure-stack-hci-parent-disk)
+> Note: Windows Server Core VHD can be created using [CreateParentDisk.ps1](https://github.com/microsoft/MSLab/blob/master/Tools/CreateParentDisk.ps1). The similar process (but how to create Azure Stack HCI VHD) is described in [Hydrate MSLab guide](../../admin-guides/01-HydrateMSLab#task-4---create-azure-stack-hci-parent-disk)
 
 ![](./media/powershell01.png)
 

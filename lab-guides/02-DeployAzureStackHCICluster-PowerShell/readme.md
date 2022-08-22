@@ -28,11 +28,11 @@ Lab is based on [MSLab Azure Stack HCI deployment scenario](https://github.com/m
 
 ## Prerequisites
 
-* Hydrated MSLab with LabConfig from [01-HydrateMSLab](https://github.com/DellGEOS/AzureStackHOLs/tree/main/admin-guides/01-HydrateMSLab/readme.md)
+* Hydrated MSLab with LabConfig from [01-HydrateMSLab](../../admin-guides/01-HydrateMSLab/readme.md)
 
-* Understand [how MSLab works](admin-guides/02-WorkingWithMSLab/readme.md)
+* Understand [how MSLab works](../../admin-guides/02-WorkingWithMSLab/readme.md)
 
-* Optional - [OS deployed on hardware](https://github.com/DellGEOS/AzureStackHOLs/tree/main/admin-guides/03-DeployPhysicalServersWithMSLab/readme.md)
+* Optional - [OS deployed on hardware](../../admin-guides/03-DeployPhysicalServersWithMSLab/readme.md)
 
 ## LabConfig
 

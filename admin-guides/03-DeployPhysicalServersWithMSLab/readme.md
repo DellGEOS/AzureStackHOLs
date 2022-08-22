@@ -20,9 +20,9 @@
 
 ## Prerequisites
 
-* Hydrate MSLab [01-HydrateMSLab](admin-guides/01-HydrateMSLab/readme.md) - make sure you use same LabConfig (username, password, preferrably also domain)
+* Hydrate MSLab [01-HydrateMSLab](../../admin-guides/01-HydrateMSLab/readme.md) - make sure you use same LabConfig (username, password, preferrably also domain)
 
-* make sure you know [how to work with MSLab](admin-guides/02-WorkingWithMSLab/readme.md)
+* make sure you know [how to work with MSLab](../../admin-guides/02-WorkingWithMSLab/readme.md)
 
 * two and more Physical servers (preferrably AX-Nodes) with iDRAC.
 

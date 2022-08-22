@@ -25,13 +25,13 @@ If using virtual environment, dell DSU will obviously not work.
 
 To perform following lab you can setup cluster using guides below:
 
-* Hydrate MSLab with LabConfig from [01-HydrateMSLab](https://github.com/DellGEOS/AzureStackHOLs/tree/main/admin-guides/01-HydrateMSLab/readme.md)
+* Hydrate MSLab with LabConfig from [01-HydrateMSLab](../../admin-guides/01-HydrateMSLab/readme.md)
 
-* [Learn How MSLab works](https://github.com/DellGEOS/AzureStackHOLs/tree/main/admin-guides/02-WorkingWithMSLab/readme.md)
+* [Learn How MSLab works](../../admin-guides/02-WorkingWithMSLab/readme.md)
 
-* [Deploy OS on hardware](https://github.com/DellGEOS/AzureStackHOLs/tree/main/admin-guides/03-DeployPhysicalServersWithMSLab/readme.md)
+* [Deploy OS on hardware](../../admin-guides/03-DeployPhysicalServersWithMSLab/readme.md)
 
-* [Deploy Azure Stack HCI with PowerShell](https://github.com/DellGEOS/AzureStackHOLs/tree/main/lab-guides/02-DeployAzureStackHCICluster-PowerShell/readme.md)
+* [Deploy Azure Stack HCI with PowerShell](../../lab-guides/02-DeployAzureStackHCICluster-PowerShell/readme.md)
 
 Or you can Azure Stack HCI cluster in VMs as demonstrated in [Azure Stack HCI Deployment MSLab Scenario](https://github.com/microsoft/MSLab/tree/master/Scenarios/AzSHCI%20Deployment).
 

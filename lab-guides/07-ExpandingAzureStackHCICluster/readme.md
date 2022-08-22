@@ -24,9 +24,9 @@ The lab is based on [AzSHCI and Cluster Expansion](https://github.com/microsoft/
 
 To perform following lab you should know how to operate MSLab:
 
-* Hydrate MSLab [01-HydrateMSLab](https://github.com/DellGEOS/AzureStackHOLs/tree/main/admin-guides/01-HydrateMSLab/readme.md)
+* Hydrate MSLab [01-HydrateMSLab](../../admin-guides/01-HydrateMSLab/readme.md)
 
-* [02-Learn How MSLab works](https://github.com/DellGEOS/AzureStackHOLs/tree/main/admin-guides/02-WorkingWithMSLab/readme.md)
+* [02-Learn How MSLab works](../../admin-guides/02-WorkingWithMSLab/readme.md)
 
 ## LabConfig
 

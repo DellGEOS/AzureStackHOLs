@@ -19,7 +19,7 @@
 
 ## Prerequisites
 
-* Hydrated MSLab with LabConfig from [01-HydrateMSLab](admin-guides/01-HydrateMSLab/readme.md)
+* Hydrated MSLab with LabConfig from [01-HydrateMSLab](../../admin-guides/01-HydrateMSLab/readme.md)
 
 ## Working with LabConfig
 

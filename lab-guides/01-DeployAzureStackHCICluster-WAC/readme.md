@@ -29,11 +29,11 @@ You can also deploy real physical servers and try deploymemt either from WACGW o
 
 ## Prerequisites
 
-* Hydrated MSLab with LabConfig from [01-HydrateMSLab](admin-guides/01-HydrateMSLab/readme.md)
+* Hydrated MSLab with LabConfig from [01-HydrateMSLab](../../admin-guides/01-HydrateMSLab/readme.md)
 
-* Understand [how MSLab works](admin-guides/02-WorkingWithMSLab/readme.md)
+* Understand [how MSLab works](../../admin-guides/02-WorkingWithMSLab/readme.md)
 
-* Optional - [OS deployed on hardware](admin-guides/03-DeployPhysicalServersWithMSLab/readme.md)
+* Optional - [OS deployed on hardware](../../admin-guides/03-DeployPhysicalServersWithMSLab/readme.md)
 
 * Optional - Windows 10 or 11 VHD, created with CreateParentDisk.ps1. You can download Windows Client Operating system in [eval center](https://www.microsoft.com/en-us/evalcenter/evaluate-windows-11-enterprise)
 

@@ -250,7 +250,7 @@ Invoke-Command -ComputerName $Nodes -ScriptBlock {
 
 ```PowerShell
 Invoke-Command -ComputerName $Nodes -ScriptBlock {
-    & "C:\Program Files\Dell\DELL EMC System Update\DSU.exe" --catalog-location="$env:UserProfile\Downloads\ASHCI-Catalog.xml" --preview
+    & "C:\Program Files\Dell\DELL System Update\DSU.exe" --catalog-location="$env:UserProfile\Downloads\ASHCI-Catalog.xml" --preview
 }
  
 ```
@@ -259,7 +259,7 @@ Invoke-Command -ComputerName $Nodes -ScriptBlock {
 
 ```PowerShell
 $ScanResult=Invoke-Command -ComputerName $Nodes -ScriptBlock {
-(Get-content "C:\ProgramData\Dell\DELL EMC System Update\dell_dup\DSU_STATUS.json" | ConvertFrom-JSon).systemUpdateStatus.InvokerInfo
+(Get-content "C:\ProgramData\Dell\DELL System Update\dell_dup\DSU_STATUS.json" | ConvertFrom-JSon).systemUpdateStatus.InvokerInfo
 }
 $ScanResult | Select-Object PSComputerName,StatusMessage
  
@@ -375,12 +375,12 @@ Invoke-Command -ComputerName $Node -ScriptBlock {
     @'
     Set-Content -Path "$env:UserProfile\Downloads\answer.txt" -Value $content -NoNewline
     #Create CMD to install updates
-    $content='"C:\Program Files\Dell\DELL EMC System Update\DSU.exe" --catalog-location=ASHCI-Catalog.xml --apply-upgrades <answer.txt'
+    $content='"C:\Program Files\Dell\DELL System Update\DSU.exe" --catalog-location=ASHCI-Catalog.xml --apply-upgrades <answer.txt'
     Set-Content -Path "$env:UserProfile\Downloads\install.cmd" -Value $content -NoNewline
     #install DSU updates
     Start-Process -FilePath "install.cmd" -Wait -WorkingDirectory "$env:UserProfile\Downloads"
     #display result
-    Get-Content "C:\ProgramData\Dell\DELL EMC System Update\dell_dup\DSU_STATUS.json"
+    Get-Content "C:\ProgramData\Dell\DELL System Update\dell_dup\DSU_STATUS.json"
 }
  
 ```

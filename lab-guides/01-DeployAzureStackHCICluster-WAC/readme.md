@@ -187,7 +187,7 @@ Invoke-Command -ComputerName $Servers -ScriptBlock {Enable-WindowsOptionalFeatur
  
 ```
 
-**Step 6** After you click on Install features again, status will turn into Installed. You can clickt next, once finished.
+**Step 6** After you click on Install features again, status will turn into Installed. You can click next, once finished.
 
 ![](./media/edge09.png)
 

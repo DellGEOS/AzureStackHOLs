@@ -15,10 +15,12 @@
     - [Task 07 - optional - Install Dell Drivers](#task-07---optional---install-dell-drivers)
     - [Task 08 - Restart servers to apply all changes](#task-08---restart-servers-to-apply-all-changes)
     - [Task 09 - Create and configure Cluster](#task-09---create-and-configure-cluster)
-    - [Task 10 Configure Cluster Aware Updating](#task-10-configure-cluster-aware-updating)
+    - [Task 10 - Configure Cluster Aware Updating](#task-10---configure-cluster-aware-updating)
     - [Task 11 Configure Networking with NetATC](#task-11-configure-networking-with-netatc)
-    - [Task 12 Configure Network HUD](#task-12-configure-network-hud)
-    - [Task 13 Configure what was not configured with NetATC](#task-13-configure-what-was-not-configured-with-netatc)
+    - [Task 12 - Configure Network HUD](#task-12---configure-network-hud)
+    - [Task 13 - Configure network settings that were not configured with NetATC](#task-13---configure-network-settings-that-were-not-configured-with-netatc)
+    - [Task 14 - Adjust NetATC Global overrides](#task-14---adjust-netatc-global-overrides)
+    - [Task 15](#task-15)
 
 <!-- /TOC -->
 
@@ -628,7 +630,7 @@ And fileshare was configured and witness file added
 ![](./media/explorer01.png)
 
 
-## Task 10 Configure Cluster Aware Updating
+## Task 10 - Configure Cluster Aware Updating
 
 Cluster Aware Updating is useful as you will have cluster role, that will be able to perform updating. Automatic Self-Updating will be disabled. But cluster role will be used when performing update (as update orchestrator).
 
@@ -674,7 +676,7 @@ Get-Cluster -Name $ClusterName | Get-ClusterParameter -Name CauEnableSoftReboot
 
 ![](./media/powershell11.png)
 
-## Task 11 Configure Networking with NetATC
+## Task 11 - Configure Networking with NetATC
 
 **Step 1** Configure Prerequisites - install roles and copy PowerShell module
 
@@ -775,7 +777,7 @@ Invoke-Command -ComputerName $servers[0] -ScriptBlock {Get-NetIntentStatus -Glob
 
 ![](./media/powershell15.png)
 
-## Task 12 Configure Network HUD
+## Task 12 - Configure Network HUD
 
 **Step 1** Install Network HUD
 
@@ -824,6 +826,168 @@ $events | Format-Table -AutoSize
 
 ![](./media/powershell16.png)
 
-## Task 13 Configure what was not configured with NetATC
+## Task 13 - Configure network settings that were not configured with NetATC
 
-**Step 1** Disable disconnected adapters, rename 
+> note: all these settings applies to physical clusters only
+
+**Step 1** Disable disconnected adapters
+
+```PowerShell
+#Define servers as variable
+$Servers="AzSHCI1","AzSHCI2","AzSHCI3","AzSHCI4"
+#$Servers="AxNode1","AxNode2","AxNode3","AxNode4"
+
+#disable unused adapters
+Get-Netadapter -CimSession $Servers | Where-Object Status -ne "Up" | Disable-NetAdapter -Confirm:0
+ 
+```
+
+**Step 2** Rename iDRAC cluster networks
+
+```PowerShell
+#Rename and Configure USB NICs (iDRAC Network)
+$USBNics=get-netadapter -CimSession $Servers -InterfaceDescription "Remote NDIS Compatible Device" -ErrorAction Ignore
+if ($USBNics){
+    $Network=(Get-ClusterNetworkInterface -Cluster $ClusterName | Where-Object Adapter -eq "Remote NDIS Compatible Device").Network | Select-Object -Unique
+    $Network.Name="iDRAC"
+    $Network.Role="none"
+}
+ 
+```
+
+> note: Following screenshot is from Physical Cluster
+
+![](./media/cluadmin03.png)
+
+**Step 3** Configure DCBX Mode - Host in charge
+
+```PowerShell
+#Configure dcbxmode to be host in charge (default is firmware in charge) on mellanox adapters (Dell recommendation)
+#Caution: This disconnects adapters!
+if ((Get-CimInstance -ClassName win32_computersystem -CimSession $servers[0]).Manufacturer -like "*Dell Inc."){
+    if (Get-NetAdapter -CimSession $Servers -InterfaceDescription Mellanox*){
+        Set-NetAdapterAdvancedProperty -CimSession $Servers -InterfaceDescription Mellanox* -DisplayName 'Dcbxmode' -DisplayValue 'Host in charge'
+    }
+}
+ 
+```
+
+## Task 14 - Adjust NetATC Global overrides
+
+> note: this task is little bit deep dive just to showcase Global overrides. After netATC will be patched, it will not be necessary to adjust these settings anymore as defaults will be OK.
+
+**Step 1** Check what was configured
+
+```PowerShell
+#Define servers as variable
+$Servers="AzSHCI1","AzSHCI2","AzSHCI3","AzSHCI4"
+#$Servers="AxNode1","AxNode2","AxNode3","AxNode4"
+$ClusterName="AzSHCI-Cluster"
+#$ClusterName="Ax6515-Cluster"
+
+#Check what networks were excluded from Live Migration
+$Networks=(Get-ClusterResourceType -Cluster $clustername -Name "Virtual Machine" | Get-ClusterParameter -Name MigrationExcludeNetworks).Value -split ";"
+foreach ($Network in $Networks){Get-ClusterNetwork -Cluster $ClusterName | Where-Object ID -Match $Network}
+
+#check Live Migration option (probably bug, because it should default to SMB - version tested 1366)
+Get-VMHost -CimSession $Servers | Select-Object *Migration*
+
+#Check smbbandwith limit cluster settings (notice for some reason is SetSMBBandwidthLimit=1)
+Get-Cluster -Name $ClusterName | Select-Object *SMB*
+
+#check SMBBandwidthLimit settings (should be pouplated already with defaults on physical cluster - it calculated 1562500000 bytes per second on 2x25Gbps NICs, or empty (VMs))
+Get-SmbBandwidthLimit -CimSession $Servers
+
+#check VLAN settings (notice it's using Adapter Isolation, not VLAN)
+Get-VMNetworkAdapterIsolation -CimSession $Servers -ManagementOS
+
+#check number of live migrations (default is 1)
+get-vmhost -CimSession $Servers | Select-Object Name,MaximumVirtualMachineMigrations
+
+ 
+```
+
+> note: in output you will notice, that there were several settings that will need adjust. Some I believe are simply bugs (like SMB not used for Live Migration)
+
+![](./media/powershell17.png)
+
+> note: you can also notice, that VLAN is configured with VMNetworkAdapterIsolation commandlet, not with VMNetworkAdapterVlan
+
+![](./media/powershell18.png)
+
+**Step 2** Adjust global override
+
+> note: following script will adjust SMB Migration traffic to 40% of total link capacity. It will also switch from Compression to SMB as there is most likely bug that miscalculates capacity
+
+```PowerShell
+$vSwitchNics=(Get-VMSwitch -CimSession $Servers[0]).NetAdapterInterfaceDescriptions
+$LinkCapacityInGbps=(Get-NetAdapter -CimSession $Servers[0] -InterfaceDescription $vSwitchNics | Measure-Object Speed -Sum).sum/1000000000
+Invoke-Command -ComputerName $Servers[0] -ScriptBlock {
+    Import-Module NetworkATC
+    $overrides=New-NetIntentGlobalClusterOverrides
+    $overrides.MaximumVirtualMachineMigrations=4
+    $overrides.MaximumSMBMigrationBandwidthInGbps=$using:LinkCapacityInGbps*0.4 #40%, if one switch is down, LM will not saturate bandwidth
+    $overrides.VirtualMachineMigrationPerformanceOption="SMB"
+    Set-NetIntent -GlobalClusterOverrides $overrides
+}
+
+Start-Sleep 20 #let intent propagate a bit
+Write-Output "applying overrides intent"
+do {
+    $status=Invoke-Command -ComputerName $Servers[0] -ScriptBlock {Get-NetIntentStatus -Globaloverrides}
+    Write-Host "." -NoNewline
+    Start-Sleep 5
+} while ($status.ConfigurationStatus -contains "Provisioning" -or $status.ConfigurationStatus -contains "Retrying")
+ 
+```
+
+**Step 3** Validate settings - check ClusterOverride in GlobalOverrides 
+
+```PowerShell
+#check ClusterOverride in GlobalOverrides intent 
+Invoke-Command -ComputerName $Servers[0] -ScriptBlock {(Get-NetIntent -GlobalOverrides).ClusterOverride}
+ 
+```
+
+> note: you can see that intent was overriden with custom values.
+
+![](./media/powershell19.png)
+
+
+**Step 4** Check if there were not any errors 
+
+```PowerShell
+#check NetworkATC admin event log
+$events=Invoke-Command -ComputerName $Servers -ScriptBlock {
+    Get-WinEvent -FilterHashtable @{"LogName"="Microsoft-Windows-Networking-NetworkATC/Admin";StartTime=(get-date).AddMinutes(-15)}
+}
+$events | Select-Object MachineName,Level,Message | Format-List
+ 
+```
+
+> note: as you can see on the screenshot, there might be a bug as in message you can see that discovered bandwidth is only 2.4Gbps (not true)
+
+![](./media/powershell20.png)
+
+**Step 5** Check if the settings were applied
+
+```PowerShell
+#check Live Migration option (Will be SMB now)
+Get-VMHost -CimSession $Servers | Select-Object *Migration*
+
+#Check smbbandwith limit cluster settings (SetSMBBandwidthLimit is now 0)
+Get-Cluster -Name $ClusterName | Select-Object *SMB*
+
+#check SMBBandwidthLimit settings
+Get-SmbBandwidthLimit -CimSession $Servers
+
+#check number of live migrations
+get-vmhost -CimSession $Servers | Select-Object Name,MaximumVirtualMachineMigrations
+ 
+```
+
+![](./media/powershell21.png)
+
+
+
+## Task 15 

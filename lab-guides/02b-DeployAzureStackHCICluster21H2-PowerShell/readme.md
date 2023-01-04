@@ -1,4 +1,4 @@
-# Deploy Azure Stack HCI Cluster with PowerShell
+# Deploy Azure Stack HCI 21H2 Cluster with PowerShell
 
 <!-- TOC -->
 
@@ -22,7 +22,7 @@
 
 In this lab you will deploy 4 node Azure Stack HCI cluster using PowerShell. It will demonstrate end-to-end configuration including all details that are not covered by Windows Admin Center deployment. All steps are the same as you would do in production.
 
-You can pratice this with Dell AX nodes or in Virtual Machines.
+You can practice this with Dell AX nodes or in Virtual Machines.
 
 Lab is based on [MSLab Azure Stack HCI deployment scenario](https://github.com/microsoft/MSLab/tree/master/Scenarios/AzSHCI%20Deployment). You will find even more details there - it is very useful if you want to go in fine details such as 
 
@@ -36,9 +36,9 @@ Lab is based on [MSLab Azure Stack HCI deployment scenario](https://github.com/m
 
 ## LabConfig
 
-Below LabConfig will deploy 4 nodes for Azure Stack HCI 21H2. You can modify number of Virtual Machines by modyfing number. You can also modify Parent Disk Name by modifying ParentVHD property - so you can deploy Azure Stack HCI 21H2 or 22H2 that is currently in preview.
+Below LabConfig will deploy 4 nodes for Azure Stack HCI 21H2. You can modify number of Virtual Machines by modifying number. You can also modify Parent Disk Name by modifying ParentVHD property - so you can deploy Azure Stack HCI 21H2 or 22H2.
 
-You can uncomment the code for using nested virtualization. By default there are 4 nodes with just 1GB RAM to conserve memory of the host if running in laptop. You can also re
+You can uncomment the code for using nested virtualization. By default there are 4 nodes with just 1GB RAM to conserve memory of the host if running in laptop. You can also reconfigure number of CPUs
 
 ```PowerShell
 $LabConfig=@{ DomainAdminName='LabAdmin'; AdminPassword='LS1setup!'; DCEdition='4'; Internet=$true ; VMs=@()}
@@ -62,7 +62,7 @@ Deployment result
 
 ## Task 01 - Install management tools
 
-Depending where you are running PowerShell from, you need to install management tools and PowerShell modules that will be used. It differs if management machine
+Depending where you are running PowerShell from, you need to install management tools and PowerShell modules that will be used. It differs if management machine is DC or dedicated Management machine.
 
 **Step 1** Connect to DC virtual machine and open PowerShell from start menu (or by right-clicking on Start button, and selecting run PowerShell as Administrator)
 

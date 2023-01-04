@@ -103,6 +103,8 @@ In MSLab folder you should see LAB and ParentDisks folder along with three Power
 
 **4.** When asked for VHD Name and size, just hit enter.
 
+> note: when creating Azure Stack HCI 22H2, you need to provide name manually, as version 22H2 is detected as 21H2 (version is detected from setup.exe, but it was not updated in 22H2)
+
 ![](./media/powershell02.png)
 
 > Script will finish in few minutes. When done, press enter to close PowerShell window. Azure Stack HCI image will be created

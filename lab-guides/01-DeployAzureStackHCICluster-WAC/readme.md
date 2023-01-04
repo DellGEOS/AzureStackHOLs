@@ -102,7 +102,7 @@ Invoke-Command -Session $session -ScriptBlock {
 $Session | Remove-PSSession
 
 #add certificate to trusted root certs
-start-sleep 10
+start-sleep 30 #for some reason it requires some sleep to be able to grab certificate
 $cert = Invoke-Command -ComputerName $GatewayServerName -ScriptBlock {Get-ChildItem Cert:\LocalMachine\My\ |where subject -eq "CN=Windows Admin Center"}
 $cert | Export-Certificate -FilePath $env:TEMP\WACCert.cer
 Import-Certificate -FilePath $env:TEMP\WACCert.cer -CertStoreLocation Cert:\LocalMachine\Root\
@@ -191,7 +191,7 @@ Invoke-Command -ComputerName $Servers -ScriptBlock {Enable-WindowsOptionalFeatur
  
 ```
 
-**Step 6** After you click on Install features again, status will turn into Installed. You can clickt next, once finished.
+**Step 6** After you click on Install features again, status will turn into Installed. You can click next, once finished.
 
 ![](./media/edge09.png)
 

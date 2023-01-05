@@ -38,6 +38,8 @@ Lab is based on [MSLab Azure Stack HCI deployment scenario 22H2 edition](https:/
 
 In each task in first PowerShell script are all variables used in task defined - just in case you close PowerShell window, or you need to provide link to someone on how to configure something.
 
+If you are running physical lab, review configuration provided in [Network Configuration Guide](https://github.com/DellGEOS/AzureStackHOLs/tree/main/admin-guides/05-NetworkConfiguration)
+
 ## Prerequisites
 
 * Hydrated MSLab with LabConfig from [01-HydrateMSLab](../../admin-guides/01-HydrateMSLab/readme.md)
@@ -1149,7 +1151,7 @@ Invoke-Command -ComputerName $ClusterName -ScriptBlock {Get-AzureStackHCIArcInte
 
 ## Task 18 - Configure iDRAC USB NICs on Dell Servers (only if you are running it on physical servers)
 
-> when server is shipped from factory, the OS to iDRAC Pass-through is disabled and on all servers is same IP configured. Pass-through has to be enabed, and on each server needs to be uniqe IP Address. Below example is from real lab environment. Just change your credentials and IP Address of iDRACs (where you will connect to.)
+> when server is shipped from factory, the OS to iDRAC Pass-through is disabled and on all servers is same IP configured. Pass-through has to be enabed, and on each server needs to be uniqe IP Address for OpenManage integration to work correctly. Below example is from real lab environment. Just change your credentials and IP Address of iDRACs (where you will connect to.)
 
 ```PowerShell
 #Variables

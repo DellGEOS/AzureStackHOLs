@@ -71,3 +71,38 @@ copy running-configuration startup-configuration
  
 ```
 
+## Checking where is port connected to using LLDP
+
+In following example we will use [PSDiscoveryProtocol](https://github.com/lahell/PSDiscoveryProtocol) to display LLDP information. It will collect packets and process it to display it. You can run it from management machine against your cluster nodes. 
+
+Unfortunately it works only if physical adapters are not in the Virtual Switch.
+
+```PowerShell
+Install-Module -Name PSDiscoveryProtocol -Force
+ 
+```
+
+You collect information using this command
+
+```Powershell
+$Servers="Axnode1","Axnode2","Axnode3","Axnode4"
+
+$Packet = Invoke-DiscoveryProtocolCapture -Type LLDP -ComputerName $Servers
+Get-DiscoveryProtocolData -Packet $Packet
+ 
+```
+
+![](./media/powershell04.png)
+
+> As you can notice, you can see switch OS Version (10.5.2.9), model (S5248F-ON) and where is each port connected to (SLOT 3 PORT 1 <-> ethernet1/1/1 on HCITOR01)
+
+You can also run same as above like this, with output into the out-gridview
+
+```PowerShell
+$Servers="Axnode1","Axnode2","Axnode3","Axnode4"
+
+Invoke-DiscoveryProtocolCapture -Type LLDP -ComputerName $Servers | Get-DiscoveryProtocolData | Out-GridView
+ 
+```
+
+![](./media/powershell05.png)

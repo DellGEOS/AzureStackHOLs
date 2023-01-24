@@ -11,6 +11,7 @@
     - [Task03 - Explore deployment options](#task03---explore-deployment-options)
     - [Task04 - Deploy Azure Stack HCI cluster from Seed Node](#task04---deploy-azure-stack-hci-cluster-from-seed-node)
     - [Task05 - Monitor and validate deployment](#task05---monitor-and-validate-deployment)
+    - [Task06 - Explore what was configured](#task06---explore-what-was-configured)
 
 <!-- /TOC -->
 
@@ -148,17 +149,17 @@ Cluster deployment will be done from "Seed Node" - one cluster node that has acc
 > since machines are not domain joined, you need to add servers into trusted hosts (there is no way to validate if servers are legit before sending credentials to address)
 
 ```PowerShell
-    #make D drives online
-    $Servers="ASNode1","ASNode2","ASNode3","ASNode4"
-    #add $Servers into trustedhosts
-    Set-Item WSMan:\localhost\Client\TrustedHosts -Value $($Servers -join ',') -Force
-    #invoke command
-    Invoke-Command -ComputerName $Servers -ScriptBlock {
-        get-disk -Number 1 | Set-Disk -IsReadOnly $false
-        get-disk -Number 1 | Set-Disk -IsOffline $false
-    }
-    #set trusted hosts back to $Null
-    Set-Item WSMan:\localhost\Client\TrustedHosts -Value "" -force
+#make D drives online
+$Servers="ASNode1","ASNode2","ASNode3","ASNode4"
+#add $Servers into trustedhosts
+Set-Item WSMan:\localhost\Client\TrustedHosts -Value $($Servers -join ',') -Force
+#invoke command
+Invoke-Command -ComputerName $Servers -ScriptBlock {
+    get-disk -Number 1 | Set-Disk -IsReadOnly $false
+    get-disk -Number 1 | Set-Disk -IsOffline $false
+}
+#set trusted hosts back to $Null
+Set-Item WSMan:\localhost\Client\TrustedHosts -Value "" -force
  
 ```
 
@@ -167,21 +168,21 @@ Cluster deployment will be done from "Seed Node" - one cluster node that has acc
 > Bootstrap will create "special" instance of Windows Admin Center where you can create config or provide config to deploy Azure Stack HCI.
 
 ```PowerShell
-    #Download files
-    $downloadfolder="D:"
-    $files=@()
-    $Files+=@{Uri="https://go.microsoft.com/fwlink/?linkid=2210545" ; FileName="BootstrapCloudDeploymentTool.ps1" ; Description="Bootstrap PowerShell"}
-    $Files+=@{Uri="https://go.microsoft.com/fwlink/?linkid=2210546" ; FileName="CloudDeployment_10.2210.0.32.zip" ; Description="Cloud Deployment Package"}
-    $Files+=@{Uri="https://go.microsoft.com/fwlink/?linkid=2210608" ; FileName="Verify-CloudDeployment.zip_Hash.ps1" ; Description="Verify Cloud Deployment PowerShell"}
+#Download files
+$downloadfolder="D:"
+$files=@()
+$Files+=@{Uri="https://go.microsoft.com/fwlink/?linkid=2210545" ; FileName="BootstrapCloudDeploymentTool.ps1" ; Description="Bootstrap PowerShell"}
+$Files+=@{Uri="https://go.microsoft.com/fwlink/?linkid=2210546" ; FileName="CloudDeployment_10.2210.0.32.zip" ; Description="Cloud Deployment Package"}
+$Files+=@{Uri="https://go.microsoft.com/fwlink/?linkid=2210608" ; FileName="Verify-CloudDeployment.zip_Hash.ps1" ; Description="Verify Cloud Deployment PowerShell"}
 
-    foreach ($file in $files){
-        if (-not (Test-Path "$downloadfolder\$($file.filename)")){
-            Start-BitsTransfer -Source $file.uri -Destination "$downloadfolder\$($file.filename)" -DisplayName "Downloading: $($file.filename)"
-        }
+foreach ($file in $files){
+    if (-not (Test-Path "$downloadfolder\$($file.filename)")){
+        Start-BitsTransfer -Source $file.uri -Destination "$downloadfolder\$($file.filename)" -DisplayName "Downloading: $($file.filename)"
     }
+}
 
-    #Start bootstrap (script is looking for file "CloudDeployment_*.zip"
-    & D:\BootstrapCloudDeploymentTool.ps1
+#Start bootstrap (script is looking for file "CloudDeployment_*.zip"
+& D:\BootstrapCloudDeploymentTool.ps1
  
 ```
 
@@ -209,46 +210,46 @@ Cluster deployment will be done from "Seed Node" - one cluster node that has acc
 > keep powershell window open for next steps
 
 ```PowerShell
-    #create deployment credentials
-    $UserName="ASClus01-DeployUser"
-    $Password="LS1setup!"
-    $SecuredPassword = ConvertTo-SecureString $password -AsPlainText -Force
-    $DeploymentUserCred = New-Object System.Management.Automation.PSCredential ($UserName,$SecuredPassword)
+#create deployment credentials
+$UserName="ASClus01-DeployUser"
+$Password="LS1setup!"
+$SecuredPassword = ConvertTo-SecureString $password -AsPlainText -Force
+$DeploymentUserCred = New-Object System.Management.Automation.PSCredential ($UserName,$SecuredPassword)
 
-    $UserName="Administrator"
-    $Password="LS1setup!"
-    $SecuredPassword = ConvertTo-SecureString $password -AsPlainText -Force
-    $LocalAdminCred = New-Object System.Management.Automation.PSCredential ($UserName,$SecuredPassword)
+$UserName="Administrator"
+$Password="LS1setup!"
+$SecuredPassword = ConvertTo-SecureString $password -AsPlainText -Force
+$LocalAdminCred = New-Object System.Management.Automation.PSCredential ($UserName,$SecuredPassword)
 
-    #provide cloud name (AzureCloud)
-    $CloudName="AzureCloud"
-    #provide Service Principal Name
-    $ServicePrincipalName="Azure-Stack-Registration"
+#provide cloud name (AzureCloud)
+$CloudName="AzureCloud"
+#provide Service Principal Name
+$ServicePrincipalName="Azure-Stack-Registration"
  
 ```
 
 **Step 2** Install required modules and Login into Azure
 
 ```PowerShell
-    #login to azure
-    #download Azure module
-    if (!(Get-InstalledModule -Name az.accounts -ErrorAction Ignore)){
-        Install-Module -Name Az.Accounts -Force
-    }
-    if (-not (Get-AzContext)){
-        Connect-AzAccount -UseDeviceAuthentication
-    }
-    #select subscription if more available
-    $subscriptions=Get-AzSubscription
-    if (($subscriptions).count -gt 1){
-        $SubscriptionID=($subscriptions | Out-GridView -OutputMode Single | Select-AzSubscription).Subscription.Id
-    }else{
-        $SubscriptionID=$subscriptions.id
-    }
-    #install required modules
-    if (!(Get-InstalledModule -Name az.Resources -ErrorAction Ignore)){
-        Install-Module -Name Az.Resources -Force
-    }
+#login to azure
+#download Azure module
+if (!(Get-InstalledModule -Name az.accounts -ErrorAction Ignore)){
+    Install-Module -Name Az.Accounts -Force
+}
+if (-not (Get-AzContext)){
+    Connect-AzAccount -UseDeviceAuthentication
+}
+#select subscription if more available
+$subscriptions=Get-AzSubscription
+if (($subscriptions).count -gt 1){
+    $SubscriptionID=($subscriptions | Out-GridView -OutputMode Single | Select-AzSubscription).Subscription.Id
+}else{
+    $SubscriptionID=$subscriptions.id
+}
+#install required modules
+if (!(Get-InstalledModule -Name az.Resources -ErrorAction Ignore)){
+    Install-Module -Name Az.Resources -Force
+}
  
 ```
 
@@ -257,9 +258,9 @@ Cluster deployment will be done from "Seed Node" - one cluster node that has acc
 > to create just enough credentials to be able to register Azure Stack HCI, a role will be created. To be able to provide a password, Service Principal with name "Azure-Stack-Registration" will be created
 
 ```PowerShell
-    #Create Azure Stack HCI registration role https://learn.microsoft.com/en-us/azure-stack/hci/deploy/register-with-azure#assign-permissions-from-azure-portal
-    if (-not (Get-AzRoleDefinition -Name "Azure Stack HCI registration role")){
-        $Content=@"
+#Create Azure Stack HCI registration role https://learn.microsoft.com/en-us/azure-stack/hci/deploy/register-with-azure#assign-permissions-from-azure-portal
+if (-not (Get-AzRoleDefinition -Name "Azure Stack HCI registration role")){
+    $Content=@"
 {
     "Name": "Azure Stack HCI registration role",
     "Id": null,
@@ -285,27 +286,28 @@ Cluster deployment will be done from "Seed Node" - one cluster node that has acc
     ]
     }
 "@
-        $Content | Out-File "$env:USERPROFILE\Downloads\customHCIRole.json"
-        New-AzRoleDefinition -InputFile "$env:USERPROFILE\Downloads\customHCIRole.json"
-    }
-    #Create AzADServicePrincipal for Azure Stack HCI registration
-    $SP=Get-AZADServicePrincipal -DisplayName $ServicePrincipalName
-    if (-not $SP){
-        $SP=New-AzADServicePrincipal -DisplayName $ServicePrincipalName -Role "Azure Stack HCI registration role"
-        #remove default cred
-        Remove-AzADAppCredential -ApplicationId $SP.AppId
-    }
+    $Content | Out-File "$env:USERPROFILE\Downloads\customHCIRole.json"
+    New-AzRoleDefinition -InputFile "$env:USERPROFILE\Downloads\customHCIRole.json"
+}
 
-    #Create new SPN password
-    $credential = New-Object -TypeName "Microsoft.Azure.PowerShell.Cmdlets.Resources.MSGraph.Models.ApiV10.MicrosoftGraphPasswordCredential" -Property @{
-        "KeyID"         = (new-guid).Guid ;
-        "EndDateTime" = [DateTime]::UtcNow.AddYears(10)
-    }
-    $Creds=New-AzADAppCredential -PasswordCredentials $credential -ApplicationID $SP.AppID
-    $SPNSecret=$Creds.SecretText
-    Write-Host "Your Password is: " -NoNewLine ; Write-Host $SPNSecret -ForegroundColor Cyan
-    $SPNsecStringPassword = ConvertTo-SecureString $SPNSecret -AsPlainText -Force
-    $SPNCred=New-Object System.Management.Automation.PSCredential ($SP.AppID, $SPNsecStringPassword)
+#Create AzADServicePrincipal for Azure Stack HCI registration
+$SP=Get-AZADServicePrincipal -DisplayName $ServicePrincipalName
+if (-not $SP){
+    $SP=New-AzADServicePrincipal -DisplayName $ServicePrincipalName -Role "Azure Stack HCI registration role"
+    #remove default cred
+    Remove-AzADAppCredential -ApplicationId $SP.AppId
+}
+
+#Create new SPN password
+$credential = New-Object -TypeName "Microsoft.Azure.PowerShell.Cmdlets.Resources.MSGraph.Models.ApiV10.MicrosoftGraphPasswordCredential" -Property @{
+    "KeyID"         = (new-guid).Guid ;
+    "EndDateTime" = [DateTime]::UtcNow.AddYears(10)
+}
+$Creds=New-AzADAppCredential -PasswordCredentials $credential -ApplicationID $SP.AppID
+$SPNSecret=$Creds.SecretText
+Write-Host "Your Password is: " -NoNewLine ; Write-Host $SPNSecret -ForegroundColor Cyan
+$SPNsecStringPassword = ConvertTo-SecureString $SPNSecret -AsPlainText -Force
+$SPNCred=New-Object System.Management.Automation.PSCredential ($SP.AppID, $SPNsecStringPassword)
  
 ```
 
@@ -324,8 +326,8 @@ Cluster deployment will be done from "Seed Node" - one cluster node that has acc
 > Notice, that there are several parameters inside that config that are specific for this lab. Also IP Addresses are dynamically added as each "host" has it's DNS name registered and the host names are set during MSLab deploy.
 
 ```PowerShell
-    #create config.json
-    $Content=@"
+#create config.json
+$Content=@"
 {
     "Version": "3.0.0.0",
     "ScaleUnits": [
@@ -482,3 +484,115 @@ $Content | Out-File -FilePath d:\config.json
 ![](./media/edge05.png)
 
 ![](./media/edge06.png)
+
+**Step 2** You can also validate deployment running following PowerShell command from Management machine
+
+```PowerShell
+$SeedNode="ASNode1"
+
+Invoke-Command -ComputerName $SeedNode -ScriptBlock {
+    ([xml](Get-Content C:\ecestore\efb61d70-47ed-8f44-5d63-bed6adc0fb0f\086a22e3-ef1a-7b3a-dc9d-f407953b0f84)) | Select-Xml -XPath "//Action/Steps/Step" | ForEach-Object { $_.Node } | Select-Object FullStepIndex, Status, Name, StartTimeUtc, EndTimeUtc, @{Name="Durration";Expression={new-timespan -Start $_.StartTimeUtc -End $_.EndTimeUtc } } | ft -AutoSize
+}
+ 
+```
+
+![](./media/powershell07.png)
+
+**Step 3** Explore other logs - navigate to \\ASNode1\C$\CloudDeployment\Logs
+
+![](./media/explorer01.png)
+
+
+## Task06 - Explore what was configured
+
+**Step 1** Install management tools on Management machine
+
+```PowerShell
+#install management features to explore cluster,settings...
+Install-WindowsFeature -Name RSAT-Clustering,RSAT-Clustering-Mgmt,RSAT-Clustering-PowerShell,RSAT-Hyper-V-Tools,RSAT-Feature-Tools-BitLocker-BdeAducExt
+ 
+```
+
+**Step 2** Install Windows Admin Center on WACGW
+
+```PowerShell
+$GatewayServerName="WACGW"
+#Download Windows Admin Center if not present
+if (-not (Test-Path -Path "$env:USERPROFILE\Downloads\WindowsAdminCenter.msi")){
+    Start-BitsTransfer -Source https://aka.ms/WACDownload -Destination "$env:USERPROFILE\Downloads\WindowsAdminCenter.msi"
+    #Or preview (not updated for some time)
+    #Start-BitsTransfer -Source https://aka.ms/WACInsiderDownload -Destination "$env:USERPROFILE\Downloads\WindowsAdminCenter.msi"
+}
+#Create PS Session and copy install files to remote server
+#make sure maxevenlope is 8k
+Invoke-Command -ComputerName $GatewayServerName -ScriptBlock {Set-Item -Path WSMan:\localhost\MaxEnvelopeSizekb -Value 8192}
+$Session=New-PSSession -ComputerName $GatewayServerName
+Copy-Item -Path "$env:USERPROFILE\Downloads\WindowsAdminCenter.msi" -Destination "$env:USERPROFILE\Downloads\WindowsAdminCenter.msi" -ToSession $Session
+
+#Install Windows Admin Center
+Invoke-Command -Session $session -ScriptBlock {
+    Start-Process msiexec.exe -Wait -ArgumentList "/i $env:USERPROFILE\Downloads\WindowsAdminCenter.msi /qn /L*v log.txt REGISTRY_REDIRECT_PORT_80=1 SME_PORT=443 SSL_CERTIFICATE_OPTION=generate"
+} -ErrorAction Ignore
+
+$Session | Remove-PSSession
+
+#Configure Resource-Based constrained delegation
+Install-WindowsFeature -Name RSAT-AD-PowerShell
+$gatewayObject = Get-ADComputer -Identity $GatewayServerName
+$computers = (Get-ADComputer -Filter {OperatingSystem -eq "Azure Stack HCI"}).Name
+
+foreach ($computer in $computers){
+    $computerObject = Get-ADComputer -Identity $computer
+    Set-ADComputer -Identity $computerObject -PrincipalsAllowedToDelegateToAccount $gatewayObject
+}
+
+#update installed extensions
+#https://docs.microsoft.com/en-us/windows-server/manage/windows-admin-center/configure/use-powershell
+    #Copy Posh Modules from wacgw
+    $Session=New-PSSession -ComputerName $GatewayServerName
+    Copy-Item -Path "C:\Program Files\Windows Admin Center\PowerShell\" -Destination "C:\Program Files\Windows Admin Center\PowerShell\" -Recurse -FromSession $Session
+    $Session | Remove-PSSession
+
+    #Import Posh Modules
+    $Items=Get-ChildItem -Path "C:\Program Files\Windows Admin Center\PowerShell\Modules" -Recurse | Where-Object Extension -eq ".psm1"
+    foreach ($Item in $Items){
+        Import-Module $Item.fullName
+    }
+
+    #list commands
+    Get-Command -Module ExtensionTools
+
+    #grab installed extensions 
+    $InstalledExtensions=Get-Extension -GatewayEndpoint https://$GatewayServerName  | Where-Object status -eq Installed
+    $ExtensionsToUpdate=$InstalledExtensions | Where-Object IsLatestVersion -eq $False
+
+    foreach ($Extension in $ExtensionsToUpdate){
+        Update-Extension -GatewayEndpoint https://$GatewayServerName -ExtensionId $Extension.ID
+    }
+ 
+```
+
+**Step 3** After WAC was installed, you can navigate to https://wacgw and add your Azure Stack HCI cluster
+
+> notice, that Windows Defender Application Control is enforced
+
+![](./media/edge07.png)
+
+![](./media/edge08.png)
+
+**Step 4** Explore cluster with cluadmin.msc
+
+
+![](./media/cluadmin01.png)
+
+![](./media/cluadmin02.png)
+
+![](./media/cluadmin03.png)
+
+> As you can notice here, Volumes were BitLocker encrypted (as requested in config)
+
+![](./media/cluadmin04.png)
+
+> NetIntent (NetATC) was configured to use just one VLAN (number 8) as deployment scripts detected a VM. Also you can notice, that cluster networks were not renamed.
+
+![](./media/cluadmin05.png)

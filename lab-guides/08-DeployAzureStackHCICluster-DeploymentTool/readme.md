@@ -257,12 +257,14 @@ if (!(Get-InstalledModule -Name az.Resources -ErrorAction Ignore)){
 
 > to create just enough credentials to be able to register Azure Stack HCI, a role will be created. To be able to provide a password, Service Principal with name "Azure-Stack-Registration" will be created
 
+> in Azure there is already Azure Stack HCI registration role, but it lacks permissions (has only these permissions: "Microsoft.AzureStackHCI/register/action","Microsoft.AzureStackHCI/Unregister/Action","Microsoft.AzureStackHCI/clusters/*")
+
 ```PowerShell
 #Create Azure Stack HCI registration role https://learn.microsoft.com/en-us/azure-stack/hci/deploy/register-with-azure#assign-permissions-from-azure-portal
-if (-not (Get-AzRoleDefinition -Name "Azure Stack HCI registration role")){
+if (-not (Get-AzRoleDefinition -Name "Azure Stack HCI registration role - Custom")){
     $Content=@"
 {
-    "Name": "Azure Stack HCI registration role",
+    "Name": "Azure Stack HCI registration role - Custom",
     "Id": null,
     "IsCustom": true,
     "Description": "Custom Azure role to allow subscription-level access to register Azure Stack HCI",
@@ -293,7 +295,7 @@ if (-not (Get-AzRoleDefinition -Name "Azure Stack HCI registration role")){
 #Create AzADServicePrincipal for Azure Stack HCI registration
 $SP=Get-AZADServicePrincipal -DisplayName $ServicePrincipalName
 if (-not $SP){
-    $SP=New-AzADServicePrincipal -DisplayName $ServicePrincipalName -Role "Azure Stack HCI registration role"
+    $SP=New-AzADServicePrincipal -DisplayName $ServicePrincipalName -Role "Azure Stack HCI registration role - Custom"
     #remove default cred
     Remove-AzADAppCredential -ApplicationId $SP.AppId
 }

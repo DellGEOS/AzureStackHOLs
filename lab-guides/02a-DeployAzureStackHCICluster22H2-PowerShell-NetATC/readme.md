@@ -1108,7 +1108,16 @@ if ($ResourceGroupName){
         New-AzResourceGroup -Name $ResourceGroupName -Location $region
     }
 }
-#Register AZSHCi without prompting for creds again
+
+#Register AzSHCI with prompting for auth
+if ($ResourceGroupName){
+    Register-AzStackHCI -Region $Region -SubscriptionID $subscriptionID -ComputerName $ClusterName -UseDeviceAuthentication -ResourceGroupName $ResourceGroupName
+}else{
+    Register-AzStackHCI -Region $Region -SubscriptionID $subscriptionID -ComputerName $ClusterName -UseDeviceAuthentication
+}
+
+#Register AZSHCi without prompting for auth again
+<# 
 $armTokenItemResource = "https://management.core.windows.net/"
 #$graphTokenItemResource = "https://graph.windows.net/"
 $azContext = Get-AzContext
@@ -1120,7 +1129,8 @@ if ($ResourceGroupName){
 }else{
     Register-AzStackHCI -Region $Region -SubscriptionID $subscriptionID -ArmAccessToken $armToken -ComputerName $ClusterName -AccountId $id -ResourceName $ClusterName
 }
- 
+#>
+
 ```
 
 ![](./media/powershell28.png)

@@ -158,8 +158,6 @@ Invoke-Command -ComputerName $Servers -ScriptBlock {
     get-disk -Number 1 | Set-Disk -IsReadOnly $false
     get-disk -Number 1 | Set-Disk -IsOffline $false
 }
-#set trusted hosts back to $Null
-Set-Item WSMan:\localhost\Client\TrustedHosts -Value "" -force
  
 ```
 
@@ -464,6 +462,9 @@ $Content=@"
 }
 "@
 $Content | Out-File -FilePath d:\config.json
+
+#set trusted hosts back to $Null
+Set-Item WSMan:\localhost\Client\TrustedHosts -Value "" -force
 
 #start deployment
 .\Invoke-CloudDeployment -JSONFilePath D:\config.json -DeploymentUserCredential  $DeploymentUserCred  -LocalAdminCredential $LocalAdminCred -RegistrationSPCredential $SPNCred -RegistrationCloudName $CloudName -RegistrationSubscriptionID $SubscriptionID

@@ -711,6 +711,29 @@ if ((Get-CimInstance -ClassName win32_computersystem -CimSession $servers[0]).Mo
 
 ![](./media/powershell12.png)
 
+> if you want to configure switchless Network Intent with dedicated NICs for east-west traffic, you can use code below (note: it's all commented, so you will not break your lab if you will accidentally run it)
+
+```PowerShell
+<#
+#if virtual environment, then skip RDMA config
+if ((Get-CimInstance -ClassName win32_computersystem -CimSession $servers[0]).Model -eq "Virtual Machine"){
+    Import-Module NetworkATC
+    #virtual environment (skipping RDMA config)
+    $AdapterOverride = New-NetIntentAdapterPropertyOverrides
+    $AdapterOverride.NetworkDirect = 0
+    Add-NetIntent -ClusterName $ClusterName -Name compute_management -Management -Compute -AdapterName "Ethernet","Ethernet 2" -AdapterPropertyOverrides $AdapterOverride -Verbose
+    Add-NetIntent -ClusterName $ClusterName -Name storage -Storage -AdapterName "Ethernet 3","Ethernet 4" -AdapterPropertyOverrides $AdapterOverride -Verbose #-StorageVlans 1,2
+}else{
+#on real hardware you can configure RDMA
+    Import-Module NetworkATC
+    $AdapterNames="SLOT 1 Port 1","SLOT 1 Port 2"
+    Add-NetIntent -ClusterName $ClusterName -Name compute_management -Management -Compute -AdapterName $AdapterNames -Verbose
+    $AdapterNames="SLOT 3 Port 1","SLOT 3 Port 2"
+    Add-NetIntent -ClusterName $ClusterName -Name storage -Storage -AdapterName $AdapterNames -Verbose
+}
+#>
+ 
+```
 **Step 3** Add default Global Intent
 
 > it would be normally added if the Add-Intent script was executed from one of the nodes. But since it's executed from Windows Server, global intent has to be added as extra step.

@@ -166,7 +166,7 @@ Invoke-Command -ComputerName $servers -ScriptBlock {
  
 ```
 
-![](./media/powershell05.png)
+![](./media/powershell06.png)
 
 **Step 3** Optional - you can now reboot and validate version again. It is not necessary as reboot will be done later after installing features.
 
@@ -186,14 +186,6 @@ $ComputersInfo | Select-Object PSComputerName,CurrentBuildNumber,UBR
 ## Task 03 - Install required roles and features
 
 Depending where you are running PowerShell from, you need to install management tools and PowerShell modules that will be used. It differs if management machine is DC or dedicated Management machine. Management machine is used to demonstrate what all features you need to install to be able to successfully deploy Azure Stack HCI as this Management machine is vanilla with no features installed.
-
-**Step 1** In PowerShell on Management machine paste following code to install management tools for Windows Server.
-
-```PowerShell
-#install features for management (assuming you are running these commands on Windows Server with GUI)
-Install-WindowsFeature -Name RSAT-Clustering,RSAT-Clustering-Mgmt,RSAT-Clustering-PowerShell,RSAT-Hyper-V-Tools,RSAT-Feature-Tools-BitLocker-BdeAducExt,RSAT-Storage-Replica
- 
-```
 
 **Step 1** In PowerShell on Management machine paste following code to install management tools for Windows Server.
 
@@ -224,7 +216,7 @@ Invoke-Command -ComputerName $servers -ScriptBlock {Install-WindowsFeature -Name
 
 > There are few new features in 22H2. NetworkATC, NetworkHUD. Network ATC also requires Data-Center-Bridging and FS-SMBBW, so it is also installed in this step.
 
-![](./media/powershell06.png)
+![](./media/powershell07.png)
 
 ## Task 04 - Configure OS Settings
 
@@ -522,9 +514,8 @@ if ((Get-CimInstance -ClassName win32_computersystem -CimSession $Servers[0]).Ma
     Disable-NetAdapter -CimSession $Servers -InterfaceDescription "Remote NDIS Compatible Device" -Confirm:0
 }
 
-Test-Cluster -Node $servers -Include "Storage Spaces Direct","Inventory","Network",
+Test-Cluster -Node $servers -Include "Storage Spaces Direct","Inventory","Network","System Configuration","Hyper-V Configuration"
 
-"System Configuration","Hyper-V Configuration"
 if ((Get-CimInstance -ClassName win32_computersystem -CimSession $Servers[0]).Manufacturer -like "*Dell*"){
     #Enable USB NIC used by iDRAC
     Enable-NetAdapter -CimSession $Servers -InterfaceDescription "Remote NDIS Compatible Device"
@@ -711,6 +702,29 @@ if ((Get-CimInstance -ClassName win32_computersystem -CimSession $servers[0]).Mo
 
 ![](./media/powershell12.png)
 
+> if you want to configure switchless Network Intent with dedicated NICs for east-west traffic, you can use code below (note: it's all commented, so you will not break your lab if you will accidentally run it)
+
+```PowerShell
+<#
+#if virtual environment, then skip RDMA config
+if ((Get-CimInstance -ClassName win32_computersystem -CimSession $servers[0]).Model -eq "Virtual Machine"){
+    Import-Module NetworkATC
+    #virtual environment (skipping RDMA config)
+    $AdapterOverride = New-NetIntentAdapterPropertyOverrides
+    $AdapterOverride.NetworkDirect = 0
+    Add-NetIntent -ClusterName $ClusterName -Name compute_management -Management -Compute -AdapterName "Ethernet","Ethernet 2" -AdapterPropertyOverrides $AdapterOverride -Verbose
+    Add-NetIntent -ClusterName $ClusterName -Name storage -Storage -AdapterName "Ethernet 3","Ethernet 4" -AdapterPropertyOverrides $AdapterOverride -Verbose #-StorageVlans 1,2
+}else{
+#on real hardware you can configure RDMA
+    Import-Module NetworkATC
+    $AdapterNames="SLOT 1 Port 1","SLOT 1 Port 2"
+    Add-NetIntent -ClusterName $ClusterName -Name compute_management -Management -Compute -AdapterName $AdapterNames -Verbose
+    $AdapterNames="SLOT 3 Port 1","SLOT 3 Port 2"
+    Add-NetIntent -ClusterName $ClusterName -Name storage -Storage -AdapterName $AdapterNames -Verbose
+}
+#>
+ 
+```
 **Step 3** Add default Global Intent
 
 > it would be normally added if the Add-Intent script was executed from one of the nodes. But since it's executed from Windows Server, global intent has to be added as extra step.

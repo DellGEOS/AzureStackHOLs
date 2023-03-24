@@ -106,3 +106,30 @@ Invoke-DiscoveryProtocolCapture -Type LLDP -ComputerName $Servers | Get-Discover
 ```
 
 ![](./media/powershell05.png)
+
+## Advanced LLDP information (DCBX)
+
+It is also possible to collect information about the physical switch if from LLDP packet capture (using PSDiscoveryProtocol) if ports are configured with either IEEE od CEE https://www.dell.com/support/manuals/no-no/smartfabric-os10-emp-partner/smartfabric-os-user-guide-10-5-4/dcbx-version?guid=guid-466ba5ec-7ecd-4d5a-9a34-dd508619d67b&lang=en-us
+
+```PowerShell
+configure terminal
+interface range ethernet1/1/1-1/1/12
+dcbx version ieee
+ 
+```
+
+After this is configured on physical switches, you can then collect packets and explore with WireShark
+
+```Powershell
+$Servers="Axnode1","Axnode2","Axnode3","Axnode4"
+
+$Packet = Invoke-DiscoveryProtocolCapture -Type LLDP -ComputerName $Servers
+$Packet | Export-Pcap -Path $env:USERNAME\Downloads\LLDPCapture.pcap
+ 
+```
+
+![](./media/wireshark_ieee.png)
+
+![](./media/wireshark_cee.png)
+
+I also made pcaps available here: [cee](./media/cee.pcap) and [ieee](./media/ieee.pcap)

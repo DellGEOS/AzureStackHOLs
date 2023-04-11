@@ -1,5 +1,18 @@
 # Network configuration
 
+<!-- TOC -->
+
+- [Network configuration](#network-configuration)
+    - [Introduction](#introduction)
+        - [Universal Configuration](#universal-configuration)
+        - [Advanced Configuration](#advanced-configuration)
+    - [Configuring the switch](#configuring-the-switch)
+    - [Checking where is port connected to using LLDP](#checking-where-is-port-connected-to-using-lldp)
+    - [Advanced LLDP information - DCBX](#advanced-lldp-information---dcbx)
+    - [Capture data with PSDiscoveryProtocol and explore with WireShark](#capture-data-with-psdiscoveryprotocol-and-explore-with-wireshark)
+
+<!-- /TOC -->
+
 ## Introduction
 
 Dell Switches (in this example we will talk about S5212F-ON) are relative simple to configure - via SSH. In our examples we will talk about two configurations - Universal and Advanced. For simplicity we will assume only Converged setup, where VMs,Management and Storage traffic will be handled with the same network adapter.
@@ -107,7 +120,7 @@ Invoke-DiscoveryProtocolCapture -Type LLDP -ComputerName $Servers | Get-Discover
 
 ![](./media/powershell05.png)
 
-## Advanced LLDP information (DCBX)
+## Advanced LLDP information - DCBX
 
 It is also possible to collect information about the physical switch if from LLDP packet capture (using PSDiscoveryProtocol) if ports are configured with either IEEE od CEE https://www.dell.com/support/manuals/no-no/smartfabric-os10-emp-partner/smartfabric-os-user-guide-10-5-4/dcbx-version?guid=guid-466ba5ec-7ecd-4d5a-9a34-dd508619d67b&lang=en-us
 
@@ -118,7 +131,21 @@ dcbx version ieee
  
 ```
 
-After this is configured on physical switches, you can then collect packets and explore with WireShark
+After above is configured, you will be able to see DCBX information in LLDP packets using following code.
+
+```PowerShell
+$Servers="Axnode1","Axnode2","Axnode3","Axnode4"
+
+$Packet = Invoke-DiscoveryProtocolCapture -Type LLDP -ComputerName $Servers
+Get-DiscoveryProtocolData -Packet $Packet | ConvertTo-Json -Depth 4
+ 
+```
+
+![](./media/powershell06.png)
+
+## Capture data with PSDiscoveryProtocol and explore with WireShark
+
+I you want to see raw information captured with PSDiscoveryProtocol, you can export packets into the pcap and explore with [wireshark](https://www.wireshark.org/)
 
 ```Powershell
 $Servers="Axnode1","Axnode2","Axnode3","Axnode4"

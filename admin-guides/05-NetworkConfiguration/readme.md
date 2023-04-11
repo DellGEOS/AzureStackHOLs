@@ -141,7 +141,13 @@ Get-DiscoveryProtocolData -Packet $Packet | ConvertTo-Json -Depth 4
  
 ```
 
+IEEE
+
 ![](./media/powershell06.png)
+
+CEE
+
+![](./media/powershell07.png)
 
 ## Capture data with PSDiscoveryProtocol and explore with WireShark
 

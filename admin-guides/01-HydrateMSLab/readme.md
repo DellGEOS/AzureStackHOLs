@@ -36,7 +36,7 @@ In this task you will download all necessary files required to setup [MSLab](htt
 
 **1.** Download MSLab scripts by navigating to [MSLab Download](https://aka.ms/mslab/download)
 
-**2.** Dowload latest Windows Server ISO - either from [MSDN Downloads](https://my.visualstudio.com/downloads), [Eval Center](https://www.microsoft.com/en-us/evalcenter/evaluate-windows-server-2022) or [VLSC Portal](https://www.microsoft.com/licensing/servicecenter)
+**2.** Download latest Windows Server ISO - either from [MSDN Downloads](https://my.visualstudio.com/downloads), [Eval Center](https://www.microsoft.com/en-us/evalcenter/evaluate-windows-server-2022) or [VLSC Portal](https://www.microsoft.com/licensing/servicecenter)
 
 **3.** Download latest [Azure Stack HCI OS ISO](https://azure.microsoft.com/en-us/products/azure-stack/hci/hci-download/)
 
@@ -113,6 +113,6 @@ In MSLab folder you should see LAB and ParentDisks folder along with three Power
 
 ### Expected result
 
-Azure Stack HCI 21H2 image will be created in ParentDisks folder.
+Azure Stack HCI 21H2 (or 22H2) image will be created in ParentDisks folder.
 
 ![](./media/explorer13.png)

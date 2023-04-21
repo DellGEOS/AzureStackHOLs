@@ -476,8 +476,7 @@ $Content | Out-File -FilePath d:\config.json
         Enable-NetFirewallRule -Name FPS-ICMP4-ERQ-In,FPS-ICMP6-ERQ-In
     }
     #add IPs to trusted hosts (bug that in BareMetal.psm1 is invoke-command with IP that is not in trusted hosts)
-    $IPs=@()
-    foreach ($Server in $Servers){$IPs+=(Resolve-DnsName -Name $Server -Type A).IPAddress}
+    $IPs=(Get-NetIPAddress -CimSession $Servers -InterfaceAlias Ethernet* -AddressFamily IPv4).IPAddress
     Set-Item WSMan:\localhost\Client\TrustedHosts -Value $($IPs -join ',') -Force
 
 #deploy

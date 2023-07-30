@@ -18,7 +18,7 @@
 
 ## About the lab
 
-In this lab you will deploy 4 node Azure Stack HCI cluster using [new tool](https://learn.microsoft.com/en-us/azure-stack/hci/manage/whats-new-preview#new-deployment-tool) available now in Preview.
+In this lab you will deploy 4 node Azure Stack HCI cluster using [new tool](https://learn.microsoft.com/en-us/azure-stack/hci/manage/whats-new-2306-preview) available now in Preview.
 
 The lab is based on [AzSHCI and Deployment tool](https://github.com/microsoft/MSLab/tree/master/Scenarios/AzSHCI%20and%20Deployment%20tool) MSLab scenario.
 
@@ -713,8 +713,6 @@ foreach ($computer in $computers){
 ![](./media/cluadmin02.png)
 
 ![](./media/cluadmin03.png)
-
-> As you can notice here, Volumes were BitLocker encrypted (as requested in config)
 
 ![](./media/cluadmin04.png)
 

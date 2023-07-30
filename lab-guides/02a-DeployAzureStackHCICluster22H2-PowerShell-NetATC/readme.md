@@ -209,9 +209,10 @@ Invoke-Command -ComputerName $servers -ScriptBlock {
     }
 }
 #define and install other features
-$features="Failover-Clustering","RSAT-Clustering-PowerShell","Hyper-V-PowerShell","NetworkATC","NetworkHUD","Data-Center-Bridging","RSAT-DataCenterBridging-LLDP-Tools","FS-SMBBW"
-#optional - affects perf even if not enabled on volumes as filter driver is attached (Bitlocker,SR,Dedup)
-#$features+="RSAT-Feature-Tools-BitLocker","Storage-Replica","RSAT-Storage-Replica","FS-Data-Deduplication","System-Insights","RSAT-System-Insights"
+$features="Failover-Clustering","RSAT-Clustering-PowerShell","Hyper-V-PowerShell","NetworkATC","NetworkHUD","Data-Center-Bridging","RSAT-DataCenterBridging-LLDP-Tools","FS-SMBBW","BitLocker","RSAT-Feature-Tools-BitLocker","System-Insights","RSAT-System-Insights"
+#optional - affects perf even if not enabled on volumes as filter driver is attached (SR,Dedup)
+#$features+="Storage-Replica","RSAT-Storage-Replica","FS-Data-Deduplication"
+
 
 Invoke-Command -ComputerName $servers -ScriptBlock {Install-WindowsFeature -Name $using:features}
  

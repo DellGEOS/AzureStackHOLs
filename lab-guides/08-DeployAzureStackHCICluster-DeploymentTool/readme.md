@@ -7,11 +7,12 @@
     - [Prerequisites](#prerequisites)
     - [LabConfig](#labconfig)
     - [Task01 - Prepare Active Directory](#task01---prepare-active-directory)
-    - [Task02 - Bootstrap Seed Node](#task02---bootstrap-seed-node)
-    - [Task03 - Explore deployment options](#task03---explore-deployment-options)
-    - [Task04 - Deploy Azure Stack HCI cluster from Seed Node](#task04---deploy-azure-stack-hci-cluster-from-seed-node)
-    - [Task05 - Monitor and validate deployment](#task05---monitor-and-validate-deployment)
-    - [Task06 - Explore what was configured](#task06---explore-what-was-configured)
+    - [Task02 - Prepare Azure Prerequisites](#task02---prepare-azure-prerequisites)
+    - [Task03 - Bootstrap Seed Node](#task03---bootstrap-seed-node)
+    - [Task04 - Explore deployment options](#task04---explore-deployment-options)
+    - [Task05 - Deploy Azure Stack HCI cluster from Seed Node](#task05---deploy-azure-stack-hci-cluster-from-seed-node)
+    - [Task06 - Monitor and validate deployment](#task06---monitor-and-validate-deployment)
+    - [Task07 - Explore what was configured](#task07---explore-what-was-configured)
 
 <!-- /TOC -->
 
@@ -19,9 +20,7 @@
 
 In this lab you will deploy 4 node Azure Stack HCI cluster using [new tool](https://learn.microsoft.com/en-us/azure-stack/hci/manage/whats-new-preview#new-deployment-tool) available now in Preview.
 
-Optionally you can deploy Windows 11 machine, and test Azure Stack HCI deployment from there
-
-The new deployment tool requires another drive (it can be another partition or another disk) and it requires hosts that are not yet domain joined. The lab is based on [AzSHCI and Deployment tool](https://github.com/microsoft/MSLab/tree/master/Scenarios/AzSHCI%20and%20Deployment%20tool) MSLab scenario.
+The lab is based on [AzSHCI and Deployment tool](https://github.com/microsoft/MSLab/tree/master/Scenarios/AzSHCI%20and%20Deployment%20tool) MSLab scenario.
 
 ## Prerequisites
 
@@ -31,9 +30,11 @@ The new deployment tool requires another drive (it can be another partition or a
 
 * Make sure you hydrate Azure Stack HCI 22H2 VHD using CreateParentDisk.ps1 located in ParentDisks folder (note that it 22H2 is detected as 21H2, so you need to edit the name)
 
+* Make sure 22H2 VHD is 127GB (CreateParentDisk was recently updated to create 127GB disks instead of 60GB)
+
 ## LabConfig
 
-Below LabConfig will deploy 4 nodes for Azure Stack HCI 22H2 that are not domain joined with extra disk (tools.vhdx). MSLab scripts were recently updated to create 300GB tools disk (as original 30GB was not enough). If using MSLab hydrated some time ago, you can simply expand tools.vhdx using hyper-v manager (there is a tool to expand vhd) nad then mount and expand partition.
+Below LabConfig will deploy 4 nodes for Azure Stack HCI 22H2 that are not domain joined. 
 
 There is also commented line that will deploy nodes with more memory and with nested virtualization enabled.
 
@@ -44,9 +45,9 @@ $LabConfig=@{AllowedVLANs="1-10,711-719" ; DomainAdminName='LabAdmin'; AdminPass
 
 #Azure Stack HCI 22H2
 #labconfig will not domain join VMs, will add "Tools disk" and will also execute powershell command to make this tools disk online.
-1..4 | ForEach-Object {$LABConfig.VMs += @{ VMName = "ASNode$_" ; Configuration = 'S2D' ; ParentVHD = 'AzSHCI22H2_G2.vhdx' ; HDDNumber = 4 ; HDDSize= 2TB ; MemoryStartupBytes= 1GB; VMProcessorCount=4 ; vTPM=$true ; AddToolsVHD=$True ; Unattend="NoDjoin" }}
+1..4 | ForEach-Object {$LABConfig.VMs += @{ VMName = "ASNode$_" ; Configuration = 'S2D' ; ParentVHD = 'AzSHCI22H2_G2.vhdx' ; HDDNumber = 4 ; HDDSize= 2TB ; MemoryStartupBytes= 1GB; VMProcessorCount=4 ; vTPM=$true ; Unattend="NoDjoin" }}
 #labconfig for nested virtualization
-#1..4 | ForEach-Object {$LABConfig.VMs += @{ VMName = "ASNode$_" ; Configuration = 'S2D' ; ParentVHD = 'AzSHCI22H2_G2.vhdx' ; HDDNumber = 4 ; HDDSize= 2TB ; MemoryStartupBytes= 6GB; VMProcessorCount=4 ; vTPM=$true ; AddToolsVHD=$True ; Unattend="NoDjoin" ; NestedVirt=$true }}
+#1..4 | ForEach-Object {$LABConfig.VMs += @{ VMName = "ASNode$_" ; Configuration = 'S2D' ; ParentVHD = 'AzSHCI22H2_G2.vhdx' ; HDDNumber = 4 ; HDDSize= 2TB ; MemoryStartupBytes= 6GB; VMProcessorCount=4 ; vTPM=$true ; Unattend="NoDjoin" ; NestedVirt=$true }}
 
 #Windows Admin Center in GW mode
 $LabConfig.VMs += @{ VMName = 'WACGW' ; ParentVHD = 'Win2022Core_G2.vhdx'; MGMTNICs=1}
@@ -123,7 +124,7 @@ Install-Module AsHciADArtifactsPreCreationTool -Repository PSGallery -Force
     Install-WindowsFeature -Name RSAT-AD-PowerShell,GPMC
 
     #populate objects
-    New-HciAdObjectsPreCreation -Deploy -AsHciDeploymentUserCredential $Credentials -AsHciOUName $AsHCIOUName -AsHciPhysicalNodeList $Servers -DomainFQDN $DomainFQDN -AsHciClusterName $ClusterName -AsHciDeploymentPrefix $Prefix
+    New-HciAdObjectsPreCreation -Deploy -AzureStackLCMUserCredential  $Credentials -AsHciOUName $AsHCIOUName -AsHciPhysicalNodeList $Servers -DomainFQDN $DomainFQDN -AsHciClusterName $ClusterName -AsHciDeploymentPrefix $Prefix
  
 ```
 
@@ -131,138 +132,116 @@ Install-Module AsHciADArtifactsPreCreationTool -Repository PSGallery -Force
 
 ![](./media/dsa01.png)
 
-## Task02 - Bootstrap Seed Node
+**Step 5** Install additional features to be able explore cluster and settings once it's created
 
-Cluster deployment will be done from "Seed Node" - one cluster node that has access to other nodes
+```PowerShell
+    #install management features to explore cluster,settings...
+    Install-WindowsFeature -Name "RSAT-ADDS","RSAT-Clustering"
+ 
+```
 
-**Step 1** Log in into ASNode1
+## Task02 - Prepare Azure Prerequisites
 
-> Simply use credentials Administrator/LS1setup!
+> You can continue running this script on management machine, or you can run it on ASNode1 (seed node). If running on Management machine, you will need to copy variables that will be created.
 
-> Once logged in, press 15 to exit to command line (PowerShell)
+**Step 1** Populate Variables
+
+> There are two kinds of authentication when you will be deploying cluster from seed node. Using Service Principal or with MFA. Service principal is very useful if someone else in the organization wants to delegate exact rights to someone who will be deploying cluster. The admin will create service principal and will just share AppID and Secret.
+
+> Storage account name (all chars has to be lowercase) has to be unique in Azure. Therefore random number is added
+
+```PowerShell
+    $StorageAccountName="asclus01$(Get-Random -Minimum 100000 -Maximum 999999)"
+    $ServicePrincipal=$True #or false if you want to use MFA (and skip SP creation)
+    $ServicePrincipalName="Azure-Stack-Registration"
+    $ResourceGroupName="ASClus01-RG"
+    $Location="EastUS"
+ 
+```
+
+**Step 2** Log in into azure and select subscription
+
+> You will be requested to enter code into the browser. I find this the most secure way to log in - as you can log in in another machine - your machine you trust.
+
+```PowerShell
+    #login to azure
+        #download Azure module
+        if (!(Get-InstalledModule -Name az.accounts -ErrorAction Ignore)){
+            Install-Module -Name Az.Accounts -Force
+        }
+        if (-not (Get-AzContext)){
+            Connect-AzAccount -UseDeviceAuthentication
+        }
+
+    #select subscription if more available
+        $subscriptions=Get-AzSubscription
+        #list subscriptions
+        $subscriptions
+        if (($subscriptions).count -gt 1){
+            $SubscriptionID=Read-Host "Please give me subscription ID"
+        }else{
+            $SubscriptionID=$subscriptions.id
+        }
+ 
+```
 
 ![](./media/powershell03.png)
 
-**Step 2** Make sure "D" drive is online
+**Step 3** Make sure required resource providers are registered
 
-> in this lab environment we added "tools" disk, but the default SAN policy will keep it attached offline.
-> since machines are not domain joined, you need to add servers into trusted hosts (there is no way to validate if servers are legit before sending credentials to address)
+> I'm not sure if this is final list. Please PR if you will find something missing.
 
 ```PowerShell
-#make D drives online
-$Servers="ASNode1","ASNode2","ASNode3","ASNode4"
-#add $Servers into trustedhosts
-Set-Item WSMan:\localhost\Client\TrustedHosts -Value $($Servers -join ',') -Force
-#invoke command
-Invoke-Command -ComputerName $Servers -ScriptBlock {
-    get-disk -Number 1 | Set-Disk -IsReadOnly $false
-    get-disk -Number 1 | Set-Disk -IsOffline $false
-}
+    #make sure resource providers are registered
+        if (!(Get-InstalledModule -Name "az.resources" -ErrorAction Ignore)){
+            Install-Module -Name "az.resources" -Force
+        }
+        $Providers="Microsoft.ResourceConnector","Microsoft.Authorization","Microsoft.AzureStackHCI","Microsoft.HybridCompute","Microsoft.GuestConfiguration"
+        foreach ($Provider in $Providers){
+            Register-AzResourceProvider -ProviderNamespace $Provider
+            #wait for provider to finish registration
+            do {
+                $Status=Get-AzResourceProvider -ProviderNamespace $Provider
+                Write-Output "Registration Status - $Provider : $(($status.RegistrationState -match 'Registered').Count)/$($Status.Count)"
+                Start-Sleep 1
+            } while (($status.RegistrationState -match "Registered").Count -ne ($Status.Count))
+        }
  
 ```
 
-**Step 3** Run following command to download required files and bootstrap deployment on ASNode1
+**Step 4** Create Storage Account
 
-> Bootstrap will create "special" instance of Windows Admin Center where you can create config or provide config to deploy Azure Stack HCI.
+> Storage account will be used as cloud witness. You can see that script is using location you selected and it's using Standard, Local Redundant Storage on cool tier (as there is almost no IO)
 
 ```PowerShell
-#Download files
-$downloadfolder="D:"
-$files=@()
-$Files+=@{Uri="https://go.microsoft.com/fwlink/?linkid=2210545" ; FileName="BootstrapCloudDeploymentTool.ps1" ; Description="Bootstrap PowerShell"}
-$Files+=@{Uri="https://go.microsoft.com/fwlink/?linkid=2210546" ; FileName="CloudDeployment_10.2303.0.36.zip" ; Description="Cloud Deployment Package"}
-$Files+=@{Uri="https://go.microsoft.com/fwlink/?linkid=2210608" ; FileName="Verify-CloudDeployment.zip_Hash.ps1" ; Description="Verify Cloud Deployment PowerShell"}
+    #Create Storage Account
+    if (!(Get-InstalledModule -Name "az.storage"-ErrorAction Ignore)){
+            Install-Module -Name "az.storage" -Force
+        }
 
-foreach ($file in $files){
-    if (-not (Test-Path "$downloadfolder\$($file.filename)")){
-        Start-BitsTransfer -Source $file.uri -Destination "$downloadfolder\$($file.filename)" -DisplayName "Downloading: $($file.filename)"
+    #create resource group first
+    if (-not(Get-AzResourceGroup -Name $ResourceGroupName -ErrorAction Ignore)){
+        New-AzResourceGroup -Name $ResourceGroupName -Location $location
     }
-}
-
-#Start bootstrap (script is looking for file "CloudDeployment_*.zip"
-& D:\BootstrapCloudDeploymentTool.ps1
+    #create Storage Account
+    If (-not(Get-AzStorageAccountKey -Name $StorageAccountName -ResourceGroupName $ResourceGroupName -ErrorAction Ignore)){
+        New-AzStorageAccount -ResourceGroupName $ResourceGroupName -Name $StorageAccountName -SkuName Standard_LRS -Location $location -Kind StorageV2 -AccessTier Cool 
+    }
+    $StorageAccountAccessKey=(Get-AzStorageAccountKey -Name $StorageAccountName -ResourceGroupName $ResourceGroupName | Select-Object -First 1).Value
  
 ```
 
-![](./media/powershell04.png)
+**Step 5** If MFA is not used, Create Service Principal
 
-
-## Task03 - Explore deployment options
-
-**Step 1** Log in into Management machine and Open Edge. In Edge open https://asnode1
-
-> When prompted for credentials, use following: user: .\administrator pass: LS1setup!
-
-![](./media/edge01.png)
-
-> you can see, that you can create a config file, or you can use an existing. For sake of simplicity, let's use PowerShell
-
-![](./media/edge02.png)
-
-## Task04 - Deploy Azure Stack HCI cluster from Seed Node
-
-> all steps will be performed from Seed node - **ASNode1**
-
-**Step 1** Create Variables with deployment credentials
-
-> keep powershell window open for next steps
+> In following code you can see all permissions that are required to successfully create cluster. The list is not final. It's just what I was able to "glue" together just to make it work.
 
 ```PowerShell
-#create deployment credentials
-$UserName="ASClus01-DeployUser"
-$Password="LS1setup!"
-$SecuredPassword = ConvertTo-SecureString $password -AsPlainText -Force
-$AzureStackLCMUserCredential = New-Object System.Management.Automation.PSCredential ($UserName,$SecuredPassword)
-
-$UserName="Administrator"
-$Password="LS1setup!"
-$SecuredPassword = ConvertTo-SecureString $password -AsPlainText -Force
-$LocalAdminCred = New-Object System.Management.Automation.PSCredential ($UserName,$SecuredPassword)
-
-#provide cloud name (AzureCloud)
-$CloudName="AzureCloud"
-#provide Service Principal Name
-$ServicePrincipalName="Azure-Stack-Registration"
- 
-```
-
-**Step 2** Install required modules and Login into Azure
-
-```PowerShell
-#login to azure
-#download Azure module
-if (!(Get-InstalledModule -Name az.accounts -ErrorAction Ignore)){
-    Install-Module -Name Az.Accounts -Force
-}
-if (-not (Get-AzContext)){
-    Connect-AzAccount -UseDeviceAuthentication
-}
-#select subscription if more available
-$subscriptions=Get-AzSubscription
-#list subscriptions
-$subscriptions
-if (($subscriptions).count -gt 1){
-    $SubscriptionID=Read-Host "Please give me subscription ID"
-}else{
-    $SubscriptionID=$subscriptions.id
-}
-#install required modules
-if (!(Get-InstalledModule -Name az.Resources -ErrorAction Ignore)){
-    Install-Module -Name Az.Resources -Force
-}
- 
-```
-
-**Step 3** Create New role for registering Azure Stack HCI and new Service principal with that role
-
-> to create just enough credentials to be able to register Azure Stack HCI, a role will be created. To be able to provide a password, Service Principal with name "Azure-Stack-Registration" will be created
-
-> in Azure there is already Azure Stack HCI registration role, but it lacks permissions (has only these permissions: "Microsoft.AzureStackHCI/register/action","Microsoft.AzureStackHCI/Unregister/Action","Microsoft.AzureStackHCI/clusters/*")
-
-```PowerShell
-#Create Azure Stack HCI registration role https://learn.microsoft.com/en-us/azure-stack/hci/deploy/register-with-azure#assign-permissions-from-azure-portal
-if (-not (Get-AzRoleDefinition -Name "Azure Stack HCI registration role - Custom")){
-    $Content=@"
+    #create service principal if requested
+    if ($ServicePrincipal){
+        #Create Azure Stack HCI registration role https://learn.microsoft.com/en-us/azure-stack/hci/deploy/register-with-azure#assign-permissions-from-azure-portal
+        #https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#azure-connected-machine-onboarding
+        if (-not (Get-AzRoleDefinition -Name "Azure Stack HCI registration role - Custom" -ErrorAction Ignore)){
+            $Content=@"
 {
     "Name": "Azure Stack HCI registration role - Custom",
     "Id": null,
@@ -279,7 +258,13 @@ if (-not (Get-AzRoleDefinition -Name "Azure Stack HCI registration role - Custom
         "Microsoft.Authorization/roleAssignments/read",
         "Microsoft.HybridCompute/register/action",
         "Microsoft.GuestConfiguration/register/action",
-        "Microsoft.HybridConnectivity/register/action"
+        "Microsoft.HybridConnectivity/register/action",
+        "Microsoft.HybridCompute/machines/extensions/write",
+        "Microsoft.HybridCompute/machines/extensions/read",
+        "Microsoft.HybridCompute/machines/read",
+        "Microsoft.HybridCompute/machines/write",
+        "Microsoft.HybridCompute/privateLinkScopes/read",
+        "Microsoft.GuestConfiguration/guestConfigurationAssignments/read"
     ],
     "NotActions": [
     ],
@@ -288,32 +273,29 @@ if (-not (Get-AzRoleDefinition -Name "Azure Stack HCI registration role - Custom
     ]
     }
 "@
-    $Content | Out-File "$env:USERPROFILE\Downloads\customHCIRole.json"
-    New-AzRoleDefinition -InputFile "$env:USERPROFILE\Downloads\customHCIRole.json"
-}
+            $Content | Out-File "$env:USERPROFILE\Downloads\customHCIRole.json"
+            New-AzRoleDefinition -InputFile "$env:USERPROFILE\Downloads\customHCIRole.json"
+        }
 
-#Create AzADServicePrincipal for Azure Stack HCI registration
-$SP=Get-AZADServicePrincipal -DisplayName $ServicePrincipalName
-if (-not $SP){
-    $SP=New-AzADServicePrincipal -DisplayName $ServicePrincipalName -Role "Azure Stack HCI registration role - Custom"
-    #remove default cred
-    Remove-AzADAppCredential -ApplicationId $SP.AppId
-}
+        #Create AzADServicePrincipal for Azure Stack HCI registration (if it does not exist)
+            $SP=Get-AZADServicePrincipal -DisplayName $ServicePrincipalName
+            if (-not $SP){
+                $SP=New-AzADServicePrincipal -DisplayName $ServicePrincipalName -Role "Azure Stack HCI registration role - Custom"
+                #remove default cred
+                Remove-AzADAppCredential -ApplicationId $SP.AppId
+            }
 
-#Create new SPN password
-$credential = New-Object -TypeName "Microsoft.Azure.PowerShell.Cmdlets.Resources.MSGraph.Models.ApiV10.MicrosoftGraphPasswordCredential" -Property @{
-    "KeyID"         = (new-guid).Guid ;
-    "EndDateTime" = [DateTime]::UtcNow.AddYears(10)
-}
-$Creds=New-AzADAppCredential -PasswordCredentials $credential -ApplicationID $SP.AppID
-$SPNSecret=$Creds.SecretText
-Write-Host "Your Password is: " -NoNewLine ; Write-Host $SPNSecret -ForegroundColor Cyan
-$SPNsecStringPassword = ConvertTo-SecureString $SPNSecret -AsPlainText -Force
-$SPNCred=New-Object System.Management.Automation.PSCredential ($SP.AppID, $SPNsecStringPassword)
+        #Create new SPN password
+            $credential = New-Object -TypeName "Microsoft.Azure.PowerShell.Cmdlets.Resources.MSGraph.Models.ApiV10.MicrosoftGraphPasswordCredential" -Property @{
+                "KeyID"         = (new-guid).Guid ;
+                "EndDateTime" = [DateTime]::UtcNow.AddYears(1)
+            }
+            $Creds=New-AzADAppCredential -PasswordCredentials $credential -ApplicationID $SP.AppID
+            $SPNSecret=$Creds.SecretText
+            $SPAppID=$SP.AppID
+    }
  
 ```
-
-![](./media/powershell05.png)
 
 > you can see new Service Principal in "App Registrations" in Azure Portal
 
@@ -323,33 +305,166 @@ $SPNCred=New-Object System.Management.Automation.PSCredential ($SP.AppID, $SPNse
 
 ![](./media/edge04.png)
 
-**Step 4** Create Config and start deployment
+**Step 6** Disconnect and show all variables
+
+> If running on ASNode1, if not disconnected, MFA authentication would fail. If Running on Management, code will output code you can copy and run on ASNode1 to populate variables
+
+```PowerShell
+    Disconnect-AzAccount
+    #output variables
+    Write-Host -ForegroundColor Cyan @"
+        #Variables to copy
+        `$SubscriptionID=`"$SubscriptionID`"
+        `$SPAppID=`"$SPAppID`"
+        `$SPNSecret=`"$SPNSecret`"
+        `$ResourceGroupName=`"$ResourceGroupName`"
+        `$StorageAccountName=`"$StorageAccountName`"
+        `$StorageAccountAccessKey=`"$StorageAccountAccessKey`"
+        `$Location=`"$Location`"
+"@ 
+ 
+```
+
+![](./media/powershell04.png)
+
+
+## Task03 - Bootstrap Seed Node
+
+Cluster deployment will be done from "Seed Node" - one cluster node that has access to other nodes
+
+**Step 1** Log in into ASNode1
+
+> Simply use credentials Administrator/LS1setup!
+
+> Once logged in, press 15 to exit to command line (PowerShell)
+
+![](./media/powershell05.png)
+
+**Step 2** Populate Variables
+
+> Don't forget to copy variables if you did not run previous task from Seed node (in this case ASNode1)
+
+```PowerShell
+    #variables
+        #create deployment credentials
+        $UserName="ASClus01-DeployUser"
+        $Password="LS1setup!"
+        $SecuredPassword = ConvertTo-SecureString $password -AsPlainText -Force
+        $AzureStackLCMUserCredential = New-Object System.Management.Automation.PSCredential ($UserName,$SecuredPassword)
+        $UserName="Administrator"
+        $Password="LS1setup!"
+        $SecuredPassword = ConvertTo-SecureString $password -AsPlainText -Force
+        $LocalAdminCred = New-Object System.Management.Automation.PSCredential ($UserName,$SecuredPassword)
+
+        #the one you have to populate if you did not run above region from Seed node
+        <#
+        $SubscriptionID=""
+        $SPAppID="" #not needed if you use MFA
+        $SPNSecret="" #not needed if you use MFA
+        $ResourceGroupName=""
+        $StorageAccountName=""
+        $StorageAccountAccessKey=""
+        $Location=""
+        #>
+
+        #download folder
+        $downloadfolder="c:\temp"
+
+        $Servers="ASNode1","ASNode2","ASNode3","ASNode4"
+ 
+```
+
+**Step 3** Download all required files and bootstrap
+
+> Bootstrap will create "special" instance of Windows Admin Center where you can create config or provide config to deploy Azure Stack HCI.
+
+> keep powershell window open for next steps
+
+```PowerShell
+    #Download files
+        #create folder
+        if (-not (Test-Path $downloadfolder)){New-Item -Path $downloadfolder -ItemType Directory}
+        $files=@()
+        $Files+=@{Uri="https://go.microsoft.com/fwlink/?linkid=2210545" ; FileName="BootstrapCloudDeploymentTool.ps1" ; Description="Bootstrap PowerShell"}
+        $Files+=@{Uri="https://go.microsoft.com/fwlink/?linkid=2210546" ; FileName="CloudDeployment_10.2306.0.47.zip" ; Description="Cloud Deployment Package"}
+        $Files+=@{Uri="https://go.microsoft.com/fwlink/?linkid=2210608" ; FileName="Verify-CloudDeployment.zip_Hash.ps1" ; Description="Verify Cloud Deployment PowerShell"}
+
+        foreach ($file in $files){
+            if (-not (Test-Path "$downloadfolder\$($file.filename)")){
+                Start-BitsTransfer -Source $file.uri -Destination "$downloadfolder\$($file.filename)" -DisplayName "Downloading: $($file.filename)"
+            }
+        }
+
+    #Start bootstrap (script is looking for file "CloudDeployment_*.zip"
+    & $downloadfolder\BootstrapCloudDeploymentTool.ps1
+ 
+```
+
+![](./media/powershell06.png)
+
+
+## Task04 - Explore deployment options
+
+**Step 1** Log in into Management machine and Open Edge. In Edge open https://asnode1
+
+> When prompted for credentials, use following: user: .\administrator pass: LS1setup!
+
+![](./media/edge01.png)
+
+> you can see, that you can create a config file, or you can use an existing. For sake of simplicity, let's use PowerShell
+
+![](./media/edge02.png)
+
+## Task05 - Deploy Azure Stack HCI cluster from Seed Node
+
+> all steps will be performed from Seed node - **ASNode1**
+
+> make sure same powershell window is used as in task 03
+
+**Step 1** Create authentication token
+
+> MFA (if $SPAppID is empty) will ask you to authenticate using code
+
+```PowerShell
+    #create authentication token (Service Principal or MFA)
+    if ($SPAppID){
+        $SPNsecStringPassword = ConvertTo-SecureString $SPNSecret -AsPlainText -Force
+        $SPNCred=New-Object System.Management.Automation.PSCredential ($SPAppID, $SPNsecStringPassword)
+    }else{
+        Set-AuthenticationToken -RegistrationCloudName AzureCloud -RegistrationSubscriptionID $SubscriptionID
+    }
+ 
+```
+
+![](./media/powershell07.png)
+
+**Step 2** Create config.json
 
 > Notice, that there are several parameters inside that config that are specific for this lab. Also IP Addresses are dynamically added as each "host" has it's DNS name registered and the host names are set during MSLab deploy.
 
 ```PowerShell
-#create config.json
-$Content=@"
+    #create config.json
+    #add servers to trusted hosts so you can query IP address dynamically (in the lab we dont exactly now which adapter is first and what IP was assigned
+    $TrustedHosts=@()
+    $TrustedHosts+=$Servers
+    Set-Item WSMan:\localhost\Client\TrustedHosts -Value $($TrustedHosts -join ',') -Force
+
+    $Content=@"
 {
-    "Version": "3.0.0.0",
+    "Version": "10.0.0.0",
     "ScaleUnits": [
         {
             "DeploymentData": {
                 "SecuritySettings": {
-                    "SecurityModeSealed": true,
-                    "SecuredCoreEnforced": true,
-                    "VBSProtection": true,
                     "HVCIProtection": true,
                     "DRTMProtection": true,
-                    "KernelDMAProtection": true,
                     "DriftControlEnforced": true,
-                    "CredentialGuardEnforced": false,
+                    "CredentialGuardEnforced": true,
                     "SMBSigningEnforced": true,
                     "SMBClusterEncryption": false,
                     "SideChannelMitigationEnforced": true,
                     "BitlockerBootVolume": true,
-                    "BitlockerDataVolumes": true,
-                    "SEDProtectionEnforced": true,
+                    "BitlockerDataVolumes": false,
                     "WDACEnforced": true
                 },
                 "Observability": {
@@ -359,6 +474,10 @@ $Content=@"
                 },
                 "Cluster": {
                     "Name": "ASClus01",
+                    "WitnessType": "Cloud",
+                    "WitnessPath": "",
+                    "CloudAccountName": "$StorageAccountName",
+                    "AzureServiceEndpoint": "core.windows.net",
                     "StaticAddress": [
                         ""
                     ]
@@ -366,15 +485,9 @@ $Content=@"
                 "Storage": {
                     "ConfigurationMode": "Express"
                 },
-                "OptionalServices": {
-                    "VirtualSwitchName": "",
-                    "CSVPath": "",
-                    "ARBRegion": "westeurope"
-                },
                 "TimeZone": "Pacific Standard Time",
                 "NamingPrefix": "ASClus01",
                 "DomainFQDN": "corp.contoso.com",
-                "ExternalDomainFQDN": "corp.contoso.com",
                 "InfrastructureNetwork": [
                     {
                         "VlanId": "0",
@@ -383,7 +496,7 @@ $Content=@"
                         "IPPools": [
                             {
                                 "StartingAddress": "10.0.0.100",
-                                "EndingAddress": "10.0.0.199"
+                                "EndingAddress": "10.0.0.110"
                             }
                         ],
                         "DNSServers": [
@@ -463,38 +576,32 @@ $Content=@"
     ]
 }
 "@
-$Content | Out-File -FilePath d:\config.json
+$Content | Out-File -FilePath c:\config.json
 
-#start deployment
-#make sure some prereqs (that will be fixed in future) are set
-    #Make sure Windows Update is disabled and ping enabled (https://learn.microsoft.com/en-us/azure-stack/hci/hci-known-issues-2303)
-    Microsoft.PowerShell.Core\Invoke-Command -ComputerName $Servers -ScriptBlock {
-        reg add HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU /v NoAutoUpdate /t REG_DWORD /d 1 /f
-        reg add HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU /v AUOptions /t REG_DWORD /d 3 /f
-        Set-Service "WUAUSERV" -StartupType Disabled
-        #enable v4 and v6 ping on both domain and private/public profiles
-        Enable-NetFirewallRule -Name FPS-ICMP4-ERQ-In,FPS-ICMP6-ERQ-In
-    }
-    #add hostnames and IPs to trusted hosts (bug that in BareMetal.psm1 is invoke-command with IP that is not in trusted hosts)
-    $TrustedHosts=@()
-    $TrustedHosts+=(Get-NetIPAddress -CimSession $Servers -InterfaceAlias Ethernet* -AddressFamily IPv4).IPAddress
-    $TrustedHosts+=$Servers
-    Set-Item WSMan:\localhost\Client\TrustedHosts -Value $($TrustedHosts -join ',') -Force
-
-
-#deploy
-.\Invoke-CloudDeployment -JSONFilePath D:\config.json -AzureStackLCMUserCredential $AzureStackLCMUserCredential -LocalAdminCredential $LocalAdminCred -RegistrationSPCredential $SPNCred -RegistrationCloudName $CloudName -RegistrationSubscriptionID $SubscriptionID
+#set trusted hosts back
+Set-Item WSMan:\localhost\Client\TrustedHosts -Value "" -Force
  
 ```
 
-![](./media/powershell06.png)
+**Step 3** Start deployment
 
-> vm will now restart multiple times. Once it reboots, simply log in again. Preferably just open basic session in VMConnect
-
-![](./media/vmconnect02.png)
+> In this release it seems like MFA is not yet working as it's still asking for SP Credentials
 
 
-## Task05 - Monitor and validate deployment
+```PowerShell
+#create secured storage access key
+$StorageAccountAccessKeySecured = ConvertTo-SecureString $StorageAccountAccessKey -AsPlainText -Force
+
+#deploy
+if ($SPAppID){
+    .\Invoke-CloudDeployment -JSONFilePath c:\config.json -AzureStackLCMUserCredential $AzureStackLCMUserCredential -LocalAdminCredential $LocalAdminCred -RegistrationSPCredential $SPNCred -RegistrationCloudName AzureCloud -RegistrationSubscriptionID $SubscriptionID -RegistrationResourceGroupName $ResourceGroupName -WitnessStorageKey $StorageAccountAccessKeySecured -RegistrationRegion $Location
+}else{
+    .\Invoke-CloudDeployment -JSONFilePath c:\config.json -AzureStackLCMUserCredential $AzureStackLCMUserCredential -LocalAdminCredential $LocalAdminCred -RegistrationCloudName AzureCloud -RegistrationSubscriptionID $SubscriptionID -RegistrationResourceGroupName $ResourceGroupName -WitnessStorageKey $StorageAccountAccessKeySecured -RegistrationRegion $Location 
+}
+ 
+```
+
+## Task06 - Monitor and validate deployment
 
 **Step 1** From Management machine open Edge and navigate to Asnode1
 
@@ -504,25 +611,25 @@ $Content | Out-File -FilePath d:\config.json
 
 ![](./media/edge06.png)
 
-**Step 2** You can also validate deployment running following PowerShell command from Management machine
+**Step 2** You can also validate deployment running following PowerShell command from Management machine (once seed node is domain joined)
 
 ```PowerShell
 $SeedNode="ASNode1"
 
 Invoke-Command -ComputerName $SeedNode -ScriptBlock {
-    ([xml](Get-Content C:\ecestore\efb61d70-47ed-8f44-5d63-bed6adc0fb0f\086a22e3-ef1a-7b3a-dc9d-f407953b0f84)) | Select-Xml -XPath "//Action/Steps/Step" | ForEach-Object { $_.Node } | Select-Object FullStepIndex, Status, Name, StartTimeUtc, EndTimeUtc, @{Name="Durration";Expression={new-timespan -Start $_.StartTimeUtc -End $_.EndTimeUtc } } | ft -AutoSize
+    ([xml](Get-Content C:\ecestore\efb61d70-47ed-8f44-5d63-bed6adc0fb0f\086a22e3-ef1a-7b3a-dc9d-f407953b0f84)) | Select-Xml -XPath "//Action/Steps/Step" | ForEach-Object { $_.Node } | Select-Object FullStepIndex, Status, Name, StartTimeUtc, EndTimeUtc, @{Name="Duration";Expression={new-timespan -Start $_.StartTimeUtc -End $_.EndTimeUtc } } | ft -AutoSize
 }
  
 ```
 
-![](./media/powershell07.png)
+![](./media/powershell08.png)
 
 **Step 3** Explore other logs - navigate to \\ASNode1\C$\CloudDeployment\Logs
 
 ![](./media/explorer01.png)
 
 
-## Task06 - Explore what was configured
+## Task07 - Explore what was configured
 
 **Step 1** Install management tools on Management machine
 
@@ -600,7 +707,6 @@ foreach ($computer in $computers){
 ![](./media/edge08.png)
 
 **Step 4** Explore cluster with cluadmin.msc
-
 
 ![](./media/cluadmin01.png)
 

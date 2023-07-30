@@ -38,7 +38,7 @@ In this task you will download all necessary files required to setup [MSLab](htt
 
 **2.** Download latest Windows Server ISO - either from [MSDN Downloads](https://my.visualstudio.com/downloads), [Eval Center](https://www.microsoft.com/en-us/evalcenter/evaluate-windows-server-2022) or [VLSC Portal](https://www.microsoft.com/licensing/servicecenter)
 
-**3.** Download latest [Azure Stack HCI OS ISO](https://azure.microsoft.com/en-us/products/azure-stack/hci/hci-download/)
+**3.** Download latest [Azure Stack HCI OS ISO](https://azure.microsoft.com/en-us/products/azure-stack/hci/hci-download/). In the same location you can download VHDx now, so it's not needed to create parent disk from ISO. Note: VHDx contains 64GB disk size, you might need to expand it for some scenarios (new deployment tool requires at least 60GB free space, therefore resizing to 127GB is good idea)
 
 ![](./media/explorer01.png)
 

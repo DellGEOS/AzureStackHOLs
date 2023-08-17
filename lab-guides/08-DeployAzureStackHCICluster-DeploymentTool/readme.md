@@ -264,7 +264,13 @@ Install-Module AsHciADArtifactsPreCreationTool -Repository PSGallery -Force
         "Microsoft.HybridCompute/machines/read",
         "Microsoft.HybridCompute/machines/write",
         "Microsoft.HybridCompute/privateLinkScopes/read",
-        "Microsoft.GuestConfiguration/guestConfigurationAssignments/read"
+        "Microsoft.GuestConfiguration/guestConfigurationAssignments/read",
+        "Microsoft.ResourceConnector/register/action",
+        "Microsoft.Kubernetes/register/action",
+        "Microsoft.KubernetesConfiguration/register/action",
+        "Microsoft.ExtendedLocation/register/action",
+        "Microsoft.HybridContainerService/register/action",
+        "Microsoft.ResourceConnector/appliances/write"
     ],
     "NotActions": [
     ],

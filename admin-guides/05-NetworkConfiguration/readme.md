@@ -25,7 +25,7 @@ This is simplified guide, therefore there is no configuration for SDN.
 
 This config is designed to be bulletproof, and universal. It assumes aggregate switches connected 10/25Gbps ports. It also does not matter if someone will connect some servers NIC Port1 to TOR1 and some to TOR2. As result, VLTi connection can host SMB Direct communication (as if connected correctly, there would be zero traffic, but can be quite utilized if half of servers are connected Port1 <-> TOR2 / Port2 <-> TOR1). Since there is enough capacity, TOR will allow all storage VLANs to communicate on both switches.
 
-* [TOR1- S5212F-ON Universal Configuration](./media/S5212F-ON-TOR2-Universal.cfg)
+* [TOR1- S5212F-ON Universal Configuration](./media/S5212F-ON-TOR1-Universal.cfg)
 * [TOR2- S5212F-ON Universal Configuration](./media/S5212F-ON-TOR2-Universal.cfg)
 
 ![](./media/networkschema01.png)
@@ -34,7 +34,7 @@ This config is designed to be bulletproof, and universal. It assumes aggregate s
 
 This configuration assumes you/customer is using 100/200Gbps ports in aggregate switches. As S5212F has 3x100Gbps ports, two will be used for North-South communication and only one 100Gbps connection will be for East-West (as if not connected correctly, host will not communicate as odd VLANs are available only on TOR1 and even VLANs are on TOR2). The only traffic that could use VLTi is from VMs and it will flow only if one TOR switch will loose connectivity to Aggregate switches. On the picture are four ports connected (two NICs), but it also can be just one NIC (two ports).
 
-* [TOR1- S5212F-ON Advanced Configuration](./media/S5212F-ON-TOR2-Advanced.cfg)
+* [TOR1- S5212F-ON Advanced Configuration](./media/S5212F-ON-TOR1-Advanced.cfg)
 * [TOR2- S5212F-ON Advanced Configuration](./media/S5212F-ON-TOR2-Advanced.cfg)
 
 

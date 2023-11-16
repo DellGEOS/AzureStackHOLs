@@ -26,4 +26,4 @@ Guides focused at deploying and operation of Azure Stack HCI Clusters
 * [05 Test Azure Stack HCI performance with VMFleet](lab-guides/05-TestPerformanceWithVMFleet/)
 * [06 Explore Azure Stack HCI Cluster Maintenance (Deep Dive)](lab-guides/06-AzSHCIClusterMaintenanceDeepDive/)
 * [07 Expanding Azure Stack HCI Cluster (Deep Dive)](lab-guides/07-ExpandingAzureStackHCICluster/)
-* [08 Deploy Azure Stack HCI Cluster 22H2 with Deployment tool (preview)](lab-guides/08-DeployAzureStackHCICluster-DeploymentTool/)
+* [08 Deploy Azure Stack HCI Cluster 23H2 using Cloud Based Deployment (preview)](lab-guides/08-DeployAzureStackHCICluster-CloudBasedDeployment/)

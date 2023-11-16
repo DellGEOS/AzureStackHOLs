@@ -11,6 +11,7 @@
     - [Task03 - Prepare Azure Stack HCI nodes for Cloud Deployment](#task03---prepare-azure-stack-hci-nodes-for-cloud-deployment)
     - [Task03 - Add some final touches before launching cloud deployment from portal](#task03---add-some-final-touches-before-launching-cloud-deployment-from-portal)
     - [Task04 Perform Azure Stack HCI deployment from Azure Portal](#task04-perform-azure-stack-hci-deployment-from-azure-portal)
+    - [Task05 Monitor Deployment Progress](#task05-monitor-deployment-progress)
 
 <!-- /TOC -->
 
@@ -211,7 +212,7 @@ Set-Item WSMan:\localhost\Client\TrustedHosts -Value $($TrustedHosts -join ',') 
  
 ```
 
-**Step2** Install features and cumulative updates
+**Step 2** Install features and cumulative updates
 
 > In deployment guide was mentioned, that Hyper-V should be installed and also ICMP should be enabled. We will enable ICMP by simply installing failover clustering role (that would be installed later anyway). It will automatically enable all Cluster firewall rules, that will also allow ICMP firewall rule.
 
@@ -259,7 +260,7 @@ Invoke-Command -ComputerName $servers -ScriptBlock {
  
 ```
 
-**Step3** Restart servers to finish Features and Cumulative Updates installation
+**Step 3** Restart servers to finish Features and Cumulative Updates installation
 
 ```PowerShell
 #restart servers to finish Installation
@@ -272,7 +273,7 @@ Foreach ($Server in $Servers){
  
 ```
 
-**Step4** Install PowerShell modules on nodes
+**Step 4** Install PowerShell modules on nodes
 
 > To push ARC agent, new PowerShell module AzSHCI.ArcInstaller is required. Az.Resources and Az.Accounts modules are then used by arcinstaller configure RBAC on azure resources.
 
@@ -299,7 +300,7 @@ Invoke-Command -ComputerName $Servers -ScriptBlock {
  
 ```
 
-**Step5** Create custom Azure Stack HCI role with permissions to onboard Arc with connected machine agent (Arc agent)
+**Step 5** Create custom Azure Stack HCI role with permissions to onboard Arc with connected machine agent (Arc agent)
 
 > This process will likely change. First, there might be built-in role for that and second, this role has permission to write role assignements.
 
@@ -340,7 +341,7 @@ As result, you will see new custom role in IAM under your subscription.
 
 ![](./media/edge01.png)
 
-**Step6** Create Service Principal (Entra Enterprise Application)
+**Step 6** Create Service Principal (Entra Enterprise Application)
 
 > Service principal will allow you to create credentials for ARC onboarding. These credentials will be then used by Arc Installer.
 
@@ -357,7 +358,7 @@ As result, you will see new custom role in IAM under your subscription.
 
 ![](./media/edge02.png)
 
-**Step7** Create new Service Principal Password
+**Step 7** Create new Service Principal Password
 
 ```PowerShell
 #Create new SPN password
@@ -375,7 +376,7 @@ As result, you will see new custom role in IAM under your subscription.
 
 ![](./media/edge03.png)
 
-**Step8** Deploy ARC agent with Invoke-AzStackHCIarcInitialization (will fail)
+**Step 8** Deploy ARC agent with Invoke-AzStackHCIarcInitialization (will fail)
 
 ```PowerShell
 #deploy ARC Agent (It's failing, can't figure out why)
@@ -387,7 +388,7 @@ As result, you will see new custom role in IAM under your subscription.
 
 ![](./media/powershell05.png)
 
-**Step9** Register arc agent manually and try again
+**Step 9** Register arc agent manually and try again
 
 ```PowerShell
 #let's onboard ARC agent "manually"
@@ -412,7 +413,7 @@ As result, you will see new custom role in IAM under your subscription.
 
 ## Task03 - Add some final touches before launching cloud deployment from portal
 
-**Step1** Make sure there is only one NIC with gateway configured
+**Step 1** Make sure there is only one NIC with gateway configured
 
 ```PowerShell
 #make sure there is only one management NIC with IP address (setup is complaining about multiple gateways)
@@ -422,7 +423,7 @@ As result, you will see new custom role in IAM under your subscription.
  
 ```
 
-**Step2** Configure current user to be Keay Vault Administrator on ASClus01 resource group
+**Step 2** Configure current user to be Keay Vault Administrator on ASClus01 resource group
 
 ```PowerShell
 #add key vault admin of current user to Resource Group
@@ -433,7 +434,7 @@ As result, you will see new custom role in IAM under your subscription.
 
 ![](./media/edge04.png)
 
-**Step3** Configure new admin password on nodes (as Cloud Deployment requires at least 12chars)
+**Step 3** Configure new admin password on nodes (as Cloud Deployment requires at least 12chars)
 
 ```PowerShell
 #change password of local admin to be at least 12 chars
@@ -445,11 +446,11 @@ As result, you will see new custom role in IAM under your subscription.
 
 ## Task04 Perform Azure Stack HCI deployment from Azure Portal
 
-**Step1** Navigate to Azure Portal and in Azure Stack HCI clusters, click on Create button
+**Step 1** Navigate to Azure Portal and in Azure Stack HCI clusters, click on Create button
 
 ![](./media/edge05.png)
 
-**Step2** Continue with setup with following values
+**Step 2** Continue with setup with following values
 
 > In Security settings I removed Bitlocker for data volumes as it would expand VHDs when encryptiog volumes.
 
@@ -520,8 +521,55 @@ Tags:
 
 ![](./media/edge13.png)
 
-**Step3** Validation process will take some time. And if all goes OK, it will succesfully review cluster
+**Step 3** Validation process will take some time. And if all goes OK, it will succesfully review cluster
 
 > If you repeat validation process for several times, it might fail on Key Vault Audit Logging. You would need to go to Key Vault Diagnostic and remove linked storage accounts from there.
 
 > If Deployment Settings resource fails due to timeout, just try again. It will unfortunately create new storage account for key vault (we are still in preview phase). It also creates new service principal (with contributor rights) - again, something that will change.
+
+![](./media/edge14.png)
+
+![](./media/edge15.png)
+
+
+## Task05 Monitor Deployment Progress
+
+**Step 1** Monitor deployment progress from Management machine
+
+Paste following PowerShell to update credentials and pull information about the deployment progress
+
+```PowerShell
+    #Create new password credentials
+    $UserName="Administrator"
+    $Password="LS1setup!LS1setup!"
+    $SecuredPassword = ConvertTo-SecureString $password -AsPlainText -Force
+    $Credentials= New-Object System.Management.Automation.PSCredential ($UserName,$SecuredPassword)
+
+    #before domain join
+    Invoke-Command -ComputerName $Servers[0] -ScriptBlock {
+        ([xml](Get-Content C:\ecestore\efb61d70-47ed-8f44-5d63-bed6adc0fb0f\086a22e3-ef1a-7b3a-dc9d-f407953b0f84)) | Select-Xml -XPath "//Action/Steps/Step" | ForEach-Object { $_.Node } | Select-Object FullStepIndex, Status, Name, StartTimeUtc, EndTimeUtc, @{Name="Duration";Expression={new-timespan -Start $_.StartTimeUtc -End $_.EndTimeUtc } } | Format-Table -AutoSize
+    } -Credential $Credentials
+ 
+```
+
+![](./media/powershell08.png)
+
+> Once nodes are domain joined, it is no longer needed to provide credentials
+
+```PowerShell
+    #after domain join
+    Invoke-Command -ComputerName $Servers[0] -ScriptBlock {
+        ([xml](Get-Content C:\ecestore\efb61d70-47ed-8f44-5d63-bed6adc0fb0f\086a22e3-ef1a-7b3a-dc9d-f407953b0f84)) | Select-Xml -XPath "//Action/Steps/Step" | ForEach-Object { $_.Node } | Select-Object FullStepIndex, Status, Name, StartTimeUtc, EndTimeUtc, @{Name="Duration";Expression={new-timespan -Start $_.StartTimeUtc -End $_.EndTimeUtc } } | Format-Table -AutoSize
+    }
+ 
+```
+
+**Step 2** In Azure Portal, navigate to your Azure Stack Cluster and you should see deployment progress there
+
+![](./media/edge16.png)
+
+![](./media/edge17.png)
+
+**Step 3** To troubleshoot deployment you can explore deployment logs by navigating into first cluster node to c:\CloudDeployment\Logs
+
+![](./media/explorer01.png)

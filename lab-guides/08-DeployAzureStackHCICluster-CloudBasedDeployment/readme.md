@@ -10,8 +10,8 @@
     - [Task02 - Prepare Azure](#task02---prepare-azure)
     - [Task03 - Prepare Azure Stack HCI nodes for Cloud Deployment](#task03---prepare-azure-stack-hci-nodes-for-cloud-deployment)
     - [Task03 - Add some final touches before launching cloud deployment from portal](#task03---add-some-final-touches-before-launching-cloud-deployment-from-portal)
-    - [Task04 Perform Azure Stack HCI deployment from Azure Portal](#task04-perform-azure-stack-hci-deployment-from-azure-portal)
-    - [Task05 Monitor Deployment Progress](#task05-monitor-deployment-progress)
+    - [Task04 - Perform Azure Stack HCI deployment from Azure Portal](#task04---perform-azure-stack-hci-deployment-from-azure-portal)
+    - [Task05 - Monitor Deployment Progress](#task05---monitor-deployment-progress)
 
 <!-- /TOC -->
 
@@ -290,126 +290,29 @@ Invoke-Command -ComputerName $Servers -ScriptBlock {
 
 #make sure Az.Resources module is installed on nodes
 Invoke-Command -ComputerName $Servers -ScriptBlock {
-    Install-Module -Name Az.Resources  -Force
+    Install-Module -Name Az.Resources -Force
 } -Credential $Credentials
 
 #make sure az.accounts module is installed on nodes
 Invoke-Command -ComputerName $Servers -ScriptBlock {
-    Install-Module -Name az.accounts  -Force
+    Install-Module -Name az.accounts -Force
 } -Credential $Credentials
  
 ```
 
-**Step 5** Create custom Azure Stack HCI role with permissions to onboard Arc with connected machine agent (Arc agent)
-
-> This process will likely change. First, there might be built-in role for that and second, this role has permission to write role assignements.
-
-> For more information visit https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles#azure-connected-machine-onboarding
+**Step 5** Deploy ARC agent with Invoke-AzStackHCIarcInitialization
 
 ```PowerShell
-if (-not (Get-AzRoleDefinition -Name "Azure Stack HCI ARC Onboarding - Custom" -ErrorAction Ignore)){
-    $Content=@"
-{
-    "Name": "Azure Stack HCI ARC Onboarding - Custom",
-    "Id": null,
-    "IsCustom": true,
-    "Description": "Custom Azure role to allow onboard Azure Stack HCI with azshci.arcinstaller",
-    "Actions": [
-        "Microsoft.HybridCompute/machines/read",
-        "Microsoft.HybridCompute/machines/write",
-        "Microsoft.HybridCompute/privateLinkScopes/read",
-        "Microsoft.GuestConfiguration/guestConfigurationAssignments/read",
-        "Microsoft.HybridCompute/machines/extensions/write",
-        "Microsoft.Authorization/roleAssignments/write"
-    ],
-    "NotActions": [
-    ],
-    "AssignableScopes": [
-        "/subscriptions/$SubscriptionID"
-    ]
-    }
-"@
-    $Content | Out-File "$env:USERPROFILE\Downloads\customHCIRole.json"
-    New-AzRoleDefinition -InputFile "$env:USERPROFILE\Downloads\customHCIRole.json"
-}
- 
-```
-
-![](./media/powershell04.png)
-
-As result, you will see new custom role in IAM under your subscription.
-
-![](./media/edge01.png)
-
-**Step 6** Create Service Principal (Entra Enterprise Application)
-
-> Service principal will allow you to create credentials for ARC onboarding. These credentials will be then used by Arc Installer.
-
-```PowerShell
-#Create AzADServicePrincipal for Azure Stack HCI registration (if it does not exist)
-    $SP=Get-AZADServicePrincipal -DisplayName $ServicePrincipalName
-    if (-not $SP){
-        $SP=New-AzADServicePrincipal -DisplayName $ServicePrincipalName -Role "Azure Stack HCI ARC Onboarding - Custom"
-        #remove default cred
-        Remove-AzADAppCredential -ApplicationId $SP.AppId
-    }
- 
-```
-
-![](./media/edge02.png)
-
-**Step 7** Create new Service Principal Password
-
-```PowerShell
-#Create new SPN password
-    $credential = New-Object -TypeName "Microsoft.Azure.PowerShell.Cmdlets.Resources.MSGraph.Models.ApiV10.MicrosoftGraphPasswordCredential" -Property @{
-        "KeyID"         = (new-guid).Guid ;
-        "EndDateTime" = [DateTime]::UtcNow.AddYears(1)
-    }
-    $Creds=New-AzADAppCredential -PasswordCredentials $credential -ApplicationID $SP.AppID
-    $SPNSecret=$Creds.SecretText
-    $SPAppID=$SP.AppID
-    $SecuredPassword = ConvertTo-SecureString $SPNSecret -AsPlainText -Force
-    $SPNCredentials= New-Object System.Management.Automation.PSCredential ($SPAppID,$SecuredPassword)
- 
-```
-
-![](./media/edge03.png)
-
-**Step 8** Deploy ARC agent with Invoke-AzStackHCIarcInitialization (will fail)
-
-```PowerShell
-#deploy ARC Agent (It's failing, can't figure out why)
+#deploy ARC Agent
+    $ARMtoken = (Get-AzAccessToken).Token
+    $id = (Get-AzContext).Account.Id
     Invoke-Command -ComputerName $Servers -ScriptBlock {
-        Invoke-AzStackHciArcInitialization -SubscriptionID $using:SubscriptionID -ResourceGroup $using:ResourceGroupName -TenantID $using:TenantID -Cloud $using:Cloud -Region $Using:Location -SpnCredential $Using:SPNCredentials
+        Invoke-AzStackHciArcInitialization -SubscriptionID $using:SubscriptionID -ResourceGroup $using:ResourceGroupName -TenantID $using:TenantID -Cloud $using:Cloud -Region $Using:Location -ArmAccessToken $using:ARMtoken -AccountID $using:id
     } -Credential $Credentials
  
 ```
 
 ![](./media/powershell05.png)
-
-**Step 9** Register arc agent manually and try again
-
-```PowerShell
-#let's onboard ARC agent "manually"
-    Invoke-Command -ComputerName $Servers -ScriptBlock {
-        $machineName = [System.Net.Dns]::GetHostName()
-        $SPNCredentials=$using:SPNCredentials
-        $SPNpassword=$SPNCredentials.GetNetworkCredential().Password
-        & "$env:ProgramW6432\AzureConnectedMachineAgent\azcmagent.exe" connect --service-principal-id $using:SpnCredentials.UserName --service-principal-secret $SPNpassword --resource-group $using:ResourceGroupName  --resource-name "$machineName"  --tenant-id $using:TenantID --location $Using:Location --subscription-id $using:SubscriptionID --cloud $using:Cloud
-    } -Credential $Credentials
-
-#and let's run deployment again
-    Invoke-Command -ComputerName $Servers -ScriptBlock {
-        Invoke-AzStackHciArcInitialization -SubscriptionID $using:SubscriptionID -ResourceGroup $using:ResourceGroupName -TenantID $using:TenantID -Cloud $using:Cloud -Region $Using:Location -SpnCredential $Using:SPNCredentials
-    } -Credential $Credentials
-
-```
-
-![](./media/powershell06.png)
-
-![](./media/powershell07.png)
-
 
 ## Task03 - Add some final touches before launching cloud deployment from portal
 
@@ -444,7 +347,7 @@ As result, you will see new custom role in IAM under your subscription.
  
 ```
 
-## Task04 Perform Azure Stack HCI deployment from Azure Portal
+## Task04 - Perform Azure Stack HCI deployment from Azure Portal
 
 **Step 1** Navigate to Azure Portal and in Azure Stack HCI clusters, click on Create button
 
@@ -532,7 +435,7 @@ Tags:
 ![](./media/edge15.png)
 
 
-## Task05 Monitor Deployment Progress
+## Task05 - Monitor Deployment Progress
 
 **Step 1** Monitor deployment progress from Management machine
 

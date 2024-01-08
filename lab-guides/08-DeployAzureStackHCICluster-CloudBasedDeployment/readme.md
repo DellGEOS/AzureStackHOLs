@@ -17,7 +17,7 @@
 
 ## About the lab
 
-In this lab you will deploy 2 node Azure Stack HCI cluster using [cloud deployment](https://learn.microsoft.com/en-us/azure-stack/hci/whats-new#cloud-based-deployment) available now in Public Preview.
+In this lab you will deploy 2 node Azure Stack HCI cluster using [cloud deployment](https://learn.microsoft.com/en-us/azure-stack/hci/whats-new#cloud-based-deployment) available now in Public Preview. Since this is public preview, the process will likely to change as there is room to improve.
 
 The lab is based on [AzSHCI and Cloud Based Deployment](https://github.com/microsoft/MSLab/tree/master/Scenarios/AzSHCI%20and%20Cloud%20Based%20Deployment) MSLab scenario.
 
@@ -42,7 +42,7 @@ $LabConfig=@{AllowedVLANs="1-10,711-719" ; DomainAdminName='LabAdmin'; AdminPass
 
 #Azure Stack HCI 23H2
 #labconfig will not domain join VMs, will add "Tools disk" and will also execute powershell command to make this tools disk online.
-1..2 | ForEach-Object {$LABConfig.VMs += @{ VMName = "ASNode$_" ; Configuration = 'S2D' ; ParentVHD = 'AzSHCI23H2_G2.vhdx' ; HDDNumber = 4 ; HDDSize= 2TB ; MemoryStartupBytes= 1GB; VMProcessorCount=4 ; vTPM=$true ; Unattend="NoDjoin" }}
+1..2 | ForEach-Object {$LABConfig.VMs += @{ VMName = "ASNode$_" ; Configuration = 'S2D' ; ParentVHD = 'AzSHCI23H2_G2.vhdx' ; HDDNumber = 4 ; HDDSize= 2TB ; MemoryStartupBytes= 20GB; VMProcessorCount="MAX" ; vTPM=$true ; Unattend="NoDjoin" ; NestedVirt=$true }}
 
 #Windows Admin Center in GW mode
 $LabConfig.VMs += @{ VMName = 'WACGW' ; ParentVHD = 'Win2022Core_G2.vhdx'; MGMTNICs=1}
@@ -337,7 +337,16 @@ Invoke-Command -ComputerName $Servers -ScriptBlock {
 
 ![](./media/edge04.png)
 
-**Step 3** Configure new admin password on nodes (as Cloud Deployment requires at least 12chars)
+**Step 3** Configure UTC Timezone on nodes (as validation was failing with PST)
+
+```PowerShell
+Invoke-Command -ComputerName $servers -ScriptBlock {
+        Set-TimeZone -Id "UTC"
+} -Credential $Credentials
+ 
+```
+
+**Step 4** Configure new admin password on nodes (as Cloud Deployment requires at least 12chars)
 
 ```PowerShell
 #change password of local admin to be at least 12 chars
@@ -429,6 +438,8 @@ Tags:
 > If you repeat validation process for several times, it might fail on Key Vault Audit Logging. You would need to go to Key Vault Diagnostic and remove linked storage accounts from there.
 
 > If Deployment Settings resource fails due to timeout, just try again. It will unfortunately create new storage account for key vault (we are still in preview phase). It also creates new service principal (with contributor rights) - again, something that will change.
+
+> I did not have any of these issues when deploying physical nodes. This seems to be limitation on Virtual Machines only.
 
 ![](./media/edge14.png)
 

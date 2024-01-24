@@ -19,9 +19,9 @@ Guides, that focuses at how to deploy and operate labs.
 Guides focused at deploying and operation of Azure Stack HCI Clusters
 
 * [01a Deploy Azure Stack HCI Cluster 23H2 using Cloud Based Deployment (preview)](lab-guides/01a-DeployAzureStackHCICluster-CloudBasedDeployment/)
-* [01b Deploy Azure Stack HCI Cluster 22H2 with PowerShell and NetworkATC](lab-guides/02b-DeployAzureStackHCICluster22H2-PowerShell/)
+* [01b Deploy Azure Stack HCI Cluster 22H2 with PowerShell and NetworkATC](lab-guides/01b-DeployAzureStackHCICluster22H2-PowerShell/)
 * [02 Explore OpenManage Extension for Windows Admin Center](lab-guides/02-OpenManageExtensionForWAC/)
-* [03 Test Azure Stack HCI performance with VMFleet](lab-guides/05-TestPerformanceWithVMFleet/)
+* [03 Test Azure Stack HCI performance with VMFleet](lab-guides/03-TestPerformanceWithVMFleet/)
 * [04 Explore Azure Stack HCI Cluster Maintenance (Deep Dive)](lab-guides/04-AzSHCIClusterMaintenanceDeepDive/)
 
 

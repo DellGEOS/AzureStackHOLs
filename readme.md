@@ -25,9 +25,9 @@ Guides focused at deploying and operation of Azure Stack HCI Clusters
 * [04 Explore Azure Stack HCI Cluster Maintenance (Deep Dive)](lab-guides/04-AzSHCIClusterMaintenanceDeepDive/)
 
 
-# Deprecated
+# Deprecated labs
 
-* [Deploy Azure Virtual Desktop](Deprecated/DeployAVDonAzureStackHCI/)
-* [Deploy Azure Stack HCI Cluster using Windows Admin Center](Deprecated/DeployAzureStackHCICluster-WAC/)
-* [Deploy Azure Stack HCI Cluster using PowerShell (21H2 and Windows Server 2022)](Deprecated/DeployAzureStackHCICluster21H2-PowerShell/)
-* [Expanding Azure Stack HCI Cluster](Deprecated/ExpandingAzureStackHCICluster/)
+* [Deploy Azure Virtual Desktop](deprecated/DeployAVDonAzureStackHCI/)
+* [Deploy Azure Stack HCI Cluster using Windows Admin Center](deprecated/DeployAzureStackHCICluster-WAC/)
+* [Deploy Azure Stack HCI Cluster using PowerShell (21H2 and Windows Server 2022)](deprecated/DeployAzureStackHCICluster21H2-PowerShell/)
+* [Expanding Azure Stack HCI Cluster](deprecated/ExpandingAzureStackHCICluster/)

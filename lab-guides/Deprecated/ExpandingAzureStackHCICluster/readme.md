@@ -14,6 +14,10 @@
 
 ## About the lab
 
+**Deprecated as there is a new process to expand 23H2 cluster. This process is to expand 21H2. Works also for 22h2, althrought you dont have to create new volumes as you can convert existing using inline resiliency change and fault domain changes https://learn.microsoft.com/en-us/azure-stack/hci/manage/single-node-scale-out**
+
+**23H2 guide https://learn.microsoft.com/en-us/azure-stack/hci/manage/add-server*
+
 This lab will help you understand how to deploy a single-node cluster and how to expand it to 2node cluster and also how to expand 2 node to 3+ node cluster. It's bit deep dive, and it's intended for experts.
 
 This lab is not going into every detail (there might be another settings that needs to be pushed to hosts such as security settings, agents, ...). For end-to-end setup review [MSLab Azure Stack HCI deployment scenario](https://github.com/microsoft/MSLab/tree/master/Scenarios/AzSHCI%20Deployment).

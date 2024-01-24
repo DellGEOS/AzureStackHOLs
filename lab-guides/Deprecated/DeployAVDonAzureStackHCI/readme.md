@@ -20,6 +20,8 @@
 
 ## About the lab
 
+**Deprecated as AVD (AVD Session Hosts) should be deployed using ARC Resource Bridge and it's supported on 23H2 only**
+
 In this lab you will learn about how to deploy Azure Virtual Desktop (currently in preview) on Azure Stack HCI. All with PowerShell.
 
 The lab is based on [AzSHCI and AVD](https://github.com/microsoft/MSLab/tree/dev/Scenarios/AzSHCI%20and%20AVD) MSLab scenario.

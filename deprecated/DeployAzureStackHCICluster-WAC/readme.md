@@ -21,6 +21,8 @@
 
 ## About the lab
 
+**Deprecated as Azure Stack HCI should be deployed either with PowerShell (22h2) or with Cloud Deployment/Supplemental Package (23H2)**
+
 In this lab you will deploy 4 node Azure Stack HCI cluster using Cluster Creation Extension in Windows Admin Center. To simplify lab, Windows Admin Center will be running on Windows Server "WACGW" and you will log into "DC" virtual machine to manage the lab.
 
 Optionally you can deploy Windows 11 machine, and test Azure Stack HCI deployment from there

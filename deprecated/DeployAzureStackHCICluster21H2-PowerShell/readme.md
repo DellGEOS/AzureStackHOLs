@@ -20,6 +20,8 @@
 
 ## About the lab
 
+**Deprecated as 21H2 is no longer supported, Networking should be deployed with NetworkATC. This guide applies to Windows Server 2022 only**
+
 In this lab you will deploy 4 node Azure Stack HCI cluster using PowerShell. It will demonstrate end-to-end configuration including all details that are not covered by Windows Admin Center deployment. All steps are the same as you would do in production.
 
 You can practice this with Dell AX nodes or in Virtual Machines.

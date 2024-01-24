@@ -30,6 +30,8 @@
 
 ## About the lab
 
+** This labguide is only for 22H2. 23H2 should be deployed using Cloud Deployment, or with Supplemental Package**
+
 In this lab you will deploy 4 node Azure Stack HCI cluster using PowerShell. It will demonstrate end-to-end configuration including all details that are not covered by Windows Admin Center deployment. All steps are the same as you would do in production. This lab also demonstrates how to deploy Network configuration using ATC.
 
 You can practice this with Dell AX nodes or in Virtual Machines.

@@ -17,10 +17,6 @@
 
 ## About the lab
 
-**In virtual environment, AzureEdgeLifecycleManager fails to install (version 30.2402.0.8). It's a hard blocker and cloud deployment can't be initiated as validation will fail**
-
-![](./media/edge18.png)
-
 In this lab you will deploy 2 node Azure Stack HCI cluster using [cloud deployment](https://learn.microsoft.com/en-us/azure-stack/hci/whats-new#cloud-based-deployment) available now in Public Preview. Since this is public preview, the process will likely to change as there is room to improve.
 
 The lab is based on [AzSHCI and Cloud Based Deployment](https://github.com/microsoft/MSLab/tree/master/Scenarios/AzSHCI%20and%20Cloud%20Based%20Deployment) MSLab scenario.

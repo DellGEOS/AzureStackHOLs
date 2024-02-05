@@ -173,21 +173,9 @@ Install-WindowsFeature -Name RSAT-Clustering,RSAT-Clustering-PowerShell
 **Step 2** Download DSU tool together with Azure Stack HCI catalog to Downloads folder
 
 ```PowerShell
-#grab DSU links from Dell website
-$URL="https://dl.dell.com/omimswac/dsu/"
-$Results=Invoke-WebRequest $URL -UseDefaultCredentials
-$Links=$results.Links.href | Select-Object -Skip 1
-#create PSObject from results
-$DSUs=@()
-foreach ($Link in $Links){
-    $DSUs+=[PSCustomObject]@{
-        Link = "https://dl.dell.com$Link"
-        Version = $link -split "_" | Select-Object -Last 2 | Select-Object -First 1
-    }
-}
-#download latest DSU to Downloads
-$LatestDSU=$DSUs | Sort-Object Version | Select-Object -Last 1
-Start-BitsTransfer -Source $LatestDSU.Link -Destination $env:UserProfile\Downloads\DSU.exe
+#download latest DSU to Downloads https://www.dell.com/support/kbdoc/en-us/000130590/dell-emc-system-update-dsu?lang=en
+$LatestDSU="https://dl.dell.com/FOLDER10889507M/1/Systems-Management_Application_RPW7K_WN64_2.0.2.3_A00.EXE"
+Start-BitsTransfer -Source $LatestDSU -Destination $env:UserProfile\Downloads\DSU.exe
 
 #Download AzureStackHCI Catalog to Downloads
 Start-BitsTransfer -Source "https://downloads.dell.com/catalog/ASHCI-Catalog.xml.gz" -Destination "$env:UserProfile\Downloads\ASHCI-Catalog.xml.gz"
@@ -309,21 +297,9 @@ $Node=$Nodes | Out-GridView -OutputMode Single -Title "Select cluster node to su
 **Step 4** Make sure Dell binaries are present on server (these steps were already performed in Task 3)
 
 ```PowerShell
-#grab DSU links from Dell website
-$URL="https://dl.dell.com/omimswac/dsu/"
-$Results=Invoke-WebRequest $URL -UseDefaultCredentials
-$Links=$results.Links.href | Select-Object -Skip 1
-#create PSObject from results
-$DSUs=@()
-foreach ($Link in $Links){
-    $DSUs+=[PSCustomObject]@{
-        Link = "https://dl.dell.com$Link"
-        Version = $link -split "_" | Select-Object -Last 2 | Select-Object -First 1
-    }
-}
-#download latest DSU to Downloads
-$LatestDSU=$DSUs | Sort-Object Version | Select-Object -Last 1
-Start-BitsTransfer -Source $LatestDSU.Link -Destination $env:UserProfile\Downloads\DSU.exe
+#download latest DSU to Downloads (link is in latest openmange users guide https://www.dell.com/support/home/en-us/product-support/product/system-update/docs)
+$LatestDSU="https://downloads.dell.com/omimswac/dsu/Systems-Management_Application_GG4YM_WN64_2.0.2.2_A00.EXE"
+Start-BitsTransfer -Source $LatestDSU -Destination $env:UserProfile\Downloads\DSU.exe
 
 #Download AzureStackHCI Catalog to Downloads
 Start-BitsTransfer -Source "https://downloads.dell.com/catalog/ASHCI-Catalog.xml.gz" -Destination "$env:UserProfile\Downloads\ASHCI-Catalog.xml.gz"

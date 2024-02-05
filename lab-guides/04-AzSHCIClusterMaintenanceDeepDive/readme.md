@@ -297,7 +297,7 @@ $Node=$Nodes | Out-GridView -OutputMode Single -Title "Select cluster node to su
 **Step 4** Make sure Dell binaries are present on server (these steps were already performed in Task 3)
 
 ```PowerShell
-#download latest DSU to Downloads (link is in latest openmange users guide https://www.dell.com/support/home/en-us/product-support/product/system-update/docs)
+#download latest DSU to Downloads (link is in latest openmange users guide https://www.dell.com/support/home/en-us/product-support/product/openmanage-integration-microsoft-windows-admin-center/docs)
 $LatestDSU="https://downloads.dell.com/omimswac/dsu/Systems-Management_Application_GG4YM_WN64_2.0.2.2_A00.EXE"
 Start-BitsTransfer -Source $LatestDSU -Destination $env:UserProfile\Downloads\DSU.exe
 

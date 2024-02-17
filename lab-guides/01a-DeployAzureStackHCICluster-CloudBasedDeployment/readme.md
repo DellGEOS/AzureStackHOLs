@@ -1,8 +1,8 @@
-# Deploy Azure Stack HCI Cluster 23H2 using Cloud Based Deployment (Preview)
+# Deploy Azure Stack HCI Cluster 23H2 using Cloud Based Deployment
 
 <!-- TOC -->
 
-- [Deploy Azure Stack HCI Cluster 23H2 using Cloud Based Deployment Preview](#deploy-azure-stack-hci-cluster-23h2-using-cloud-based-deployment-preview)
+- [Deploy Azure Stack HCI Cluster 23H2 using Cloud Based Deployment](#deploy-azure-stack-hci-cluster-23h2-using-cloud-based-deployment-preview)
     - [About the lab](#about-the-lab)
     - [Prerequisites](#prerequisites)
     - [LabConfig](#labconfig)
@@ -21,6 +21,10 @@ In this lab you will deploy 2 node Azure Stack HCI cluster using [cloud deployme
 
 The lab is based on [AzSHCI and Cloud Based Deployment](https://github.com/microsoft/MSLab/tree/master/Scenarios/AzSHCI%20and%20Cloud%20Based%20Deployment) MSLab scenario.
 
+> it is important to understand, that Cloud Deployment is not yet supported from any OEM. If you want deploy physical machines, it works well. However consider disabling Bitlocker for OS (or dont forget to suspend bitlocker before reboot after BIOS update) and disabling WDAC (wdac policy is distributed as part of Solution Builder Extension, and is not yet available)
+
+> to this date, the only way to deploy supported Azure Stack HCI 23H2 is to use Dell APEX Cloud Platform for Microsoft Azure
+
 ## Prerequisites
 
 * Hydrated MSLab with LabConfig from [01-HydrateMSLab](../../admin-guides/01-HydrateMSLab/readme.md)
@@ -35,7 +39,7 @@ The lab is based on [AzSHCI and Cloud Based Deployment](https://github.com/micro
 
 Below LabConfig will deploy 4 nodes for Azure Stack HCI 23H2 that are not domain joined.
 
-You can notice, that there are VLANs 711-719. Even these VLANs are configured in deploy config, NetATC will use VLAN 8 as it's hardcoded in the tool for virtual environments. You can later manually edit NetATC intent to use default 711 and 712.
+You can notice, that there are VLANs 711-719.
 
 ```PowerShell
 $LabConfig=@{AllowedVLANs="1-10,711-719" ; DomainAdminName='LabAdmin'; AdminPassword='LS1setup!' ; DCEdition='4'; Internet=$true; TelemetryLevel='Full' ; TelemetryNickname='' ; AdditionalNetworksConfig=@(); VMs=@()}
@@ -60,7 +64,7 @@ Deployment result
 
 ## Task01 - Prepare Active Directory
 
-In this task you will create objects in Active Directory - groups and group managed service accounts. For Group Managed Service accounts you need KDS root key., so let's jump in.
+In this task you will create objects in Active Directory. Group Managed Service accounts are no longer created, KDC is no longer needed.
 
 This task will be performed in elevated powershell window in Management machine
 
@@ -88,30 +92,7 @@ Install-PackageProvider -Name NuGet -Force
 Install-Module AsHciADArtifactsPreCreationTool -Repository PSGallery -Force
  
 ```
-
-**Step 2** Add KDS root key (if there is not any)
-
-```PowerShell
-    #add KDS Root Key
-    if (-not (Get-KdsRootKey)){
-        Add-KdsRootKey -EffectiveTime ((Get-Date).addhours(-10))
-    }
- 
-```
-
-**Step 3** (Optional) Check KD root key with GUI tool
-
-```PowerShell
-    Install-WindowsFeature -Name "RSAT-ADDS"
-    & dssite.msc
- 
-```
-
-![](./media/dssite01.png)
-
-![](./media/dssite02.png)
-
-**Step 4** Populate objects into Active Directory
+**Step 2** Populate objects into Active Directory
 
 ```PowerShell
     #make sure active directory module and GPMC is installed
@@ -127,7 +108,7 @@ Install-Module AsHciADArtifactsPreCreationTool -Repository PSGallery -Force
 ![](./media/dsa01.png)
 
 
-**Step 5** Install additional features to be able explore cluster and settings once it's created
+**Step 3** Install additional features to be able explore cluster and settings once it's created
 
 ```PowerShell
     #install management features to explore cluster,settings...
@@ -197,7 +178,6 @@ $TenantID=(Get-AzContext).Tenant.ID
 $SubscriptionID=(Get-AzContext).Subscription.ID
 $Location="eastus"
 $Cloud="AzureCloud"
-$ServicePrincipalName="Azure Stack HCI ARC Onboarding"
 
 #Since machines are not domain joined, let's do some preparation
 $UserName="Administrator"
@@ -314,6 +294,12 @@ Invoke-Command -ComputerName $Servers -ScriptBlock {
 
 ![](./media/powershell05.png)
 
+> check if all arc extensions were installed. If one failed (sometimes LCM fails), it needs to be uninstalled (in azure portal) and rerun code above to attempt to redeploy extension.
+
+> wait for extensions to be installed before continuing with lab! If you will connect to remote session, it might interrupt installing LCM extension and it will fail.
+
+![](./media/edge18.png)
+
 ## Task03 - Add some final touches before launching cloud deployment from portal
 
 **Step 1** Make sure there is only one NIC with gateway configured
@@ -425,12 +411,6 @@ Tags:
 ![](./media/edge13.png)
 
 **Step 3** Validation process will take some time. And if all goes OK, it will succesfully review cluster
-
-> If you repeat validation process for several times, it might fail on Key Vault Audit Logging. You would need to go to Key Vault Diagnostic and remove linked storage accounts from there.
-
-> If Deployment Settings resource fails due to timeout, just try again. It will unfortunately create new storage account for key vault (we are still in preview phase). It also creates new service principal (with contributor rights) - again, something that will change.
-
-> I did not have any of these issues when deploying physical nodes. This seems to be limitation on Virtual Machines only.
 
 ![](./media/edge14.png)
 

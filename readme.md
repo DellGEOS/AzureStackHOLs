@@ -13,6 +13,7 @@ Guides, that focuses at how to deploy and operate labs.
 * [03 Deploy Physical Servers with MSLab](admin-guides/03-DeployPhysicalServersWithMSLab/)
 * [04 How to Hydrate MSLab files with SCVMM](admin-guides/04-HydrateMSLab%2BSCVMM/)
 * [05 Network Configuration](admin-guides/05-NetworkConfiguration/)
+* [06 How to Create Windows Server Insider VHD](admin-guides/06-HowToCreateWindowsServerInsiderVHD/)
 
 # Lab guides
 
@@ -23,7 +24,7 @@ Guides focused at deploying and operation of Azure Stack HCI Clusters
 * [02 Explore OpenManage Extension for Windows Admin Center](lab-guides/02-OpenManageExtensionForWAC/)
 * [03 Test Azure Stack HCI performance with VMFleet](lab-guides/03-TestPerformanceWithVMFleet/)
 * [04 Explore Azure Stack HCI Cluster Maintenance (Deep Dive)](lab-guides/04-AzSHCIClusterMaintenanceDeepDive/)
-
+* [05 Testing Windows Server 2025 Insider Preview](lab-guides/05-TestingWindowsServerInsider/)
 
 # Deprecated labs
 

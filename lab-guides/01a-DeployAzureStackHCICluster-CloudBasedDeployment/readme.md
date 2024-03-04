@@ -82,10 +82,10 @@ $Servers="ASNode1","ASNode2"
 $DomainFQDN=$env:USERDNSDOMAIN
 $ClusterName="ASClus01"
 $Prefix="ASClus01"
-$UserName="ASClus01-DeployUser"
-$Password="LS1setup!LS1setup!"
-$SecuredPassword = ConvertTo-SecureString $password -AsPlainText -Force
-$Credentials= New-Object System.Management.Automation.PSCredential ($UserName,$SecuredPassword)
+$AzureLCMUserName="ASClus01-DeployUser"
+$AzureLCMPassword="LS1setup!LS1setup!"
+$AzureLCMSecuredPassword = ConvertTo-SecureString $AzureLCMPassword -AsPlainText -Force
+$AzureLCMCredentials = New-Object System.Management.Automation.PSCredential ($AzureLCMUserName,$AzureLCMSecuredPassword)
 
 #install posh module for prestaging Active Directory
 Install-PackageProvider -Name NuGet -Force
@@ -99,8 +99,8 @@ Install-Module AsHciADArtifactsPreCreationTool -Repository PSGallery -Force
     Install-WindowsFeature -Name RSAT-AD-PowerShell,GPMC
 
     #populate objects
-    New-HciAdObjectsPreCreation -Deploy -AzureStackLCMUserCredential  $Credentials -AsHciOUName $AsHCIOUName -AsHciPhysicalNodeList $Servers -DomainFQDN $DomainFQDN -AsHciClusterName $ClusterName -AsHciDeploymentPrefix $Prefix
- 
+    New-HciAdObjectsPreCreation -AzureStackLCMUserCredential $AzureLCMCredentials -AsHciOUName $AsHCIOUName
+
 ```
 
 ![](./media/powershell02.png)

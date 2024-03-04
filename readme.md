@@ -13,6 +13,7 @@ Guides, that focuses at how to deploy and operate labs.
 * [03 Deploy Physical Servers with MSLab](admin-guides/03-DeployPhysicalServersWithMSLab/)
 * [04 How to Hydrate MSLab files with SCVMM](admin-guides/04-HydrateMSLab%2BSCVMM/)
 * [05 Network Configuration](admin-guides/05-NetworkConfiguration/)
+* [06 How to Create Windows Server Insider VHD](admin-guides/06-HowToCreateWindowsServerInsiderVHD/)
 
 # Lab guides
 

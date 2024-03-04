@@ -48,7 +48,7 @@ You can also deploy physical servers (just change the image in task sequence) [u
 
 * Understand [how MSLab works](../../admin-guides/02-WorkingWithMSLab/readme.md)
 
-* Create Windows Server Insider VHDs (GUI and Core)
+* [Create Windows Server Insider VHDs](../../admin-guides/06-HowToCreateWindowsServerInsiderVHD/readme.md)) (GUI and Core)
 
 ## LabConfig
 

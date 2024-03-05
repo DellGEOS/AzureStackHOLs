@@ -283,6 +283,16 @@ Invoke-Command -ComputerName $Servers -ScriptBlock {
 **Step 5** Deploy ARC agent with Invoke-AzStackHCIarcInitialization
 
 ```PowerShell
+
+#create missing Registry Hive
+#solves following issue on fresh nodes
+#Installing LCM extention failed: 
+#Extension Error: Get-ItemProperty : Cannot find path #'HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\LCMAzureStackStampInformation' because it does not exist.
+#At C:\NugetStore\Microsoft.AzureStack.Solution.LCMControllerWinService.10.2402.0.15\content\LCMControllerWinService\DeploymentScripts\LCMControllerWinService.psm1:128 char:30
+foreach ($server in $servers){
+New-Item -Path 'HKLM:\SOFTWARE\Microsoft' -Name 'LCMAzureStackStampInformation' -Force
+}
+
 #deploy ARC Agent
     $ARMtoken = (Get-AzAccessToken).Token
     $id = (Get-AzContext).Account.Id

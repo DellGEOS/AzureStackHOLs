@@ -2,7 +2,7 @@
 
 <!-- TOC -->
 
-- [Deploy Azure Stack HCI Cluster 23H2 using Cloud Based Deployment](#deploy-azure-stack-hci-cluster-23h2-using-cloud-based-deployment-preview)
+- [Deploy Azure Stack HCI Cluster 23H2 using Cloud Based Deployment](#deploy-azure-stack-hci-cluster-23h2-using-cloud-based-deployment)
     - [About the lab](#about-the-lab)
     - [Prerequisites](#prerequisites)
     - [LabConfig](#labconfig)
@@ -78,14 +78,14 @@ This task will be performed in elevated powershell window in Management machine
 
 ```PowerShell
 $AsHCIOUName="OU=ASClus01,DC=Corp,DC=contoso,DC=com"
-$Servers="ASNode1","ASNode2"
-$DomainFQDN=$env:USERDNSDOMAIN
-$ClusterName="ASClus01"
-$Prefix="ASClus01"
-$UserName="ASClus01-DeployUser"
-$Password="LS1setup!LS1setup!"
-$SecuredPassword = ConvertTo-SecureString $password -AsPlainText -Force
-$Credentials= New-Object System.Management.Automation.PSCredential ($UserName,$SecuredPassword)
+#$Servers="ASNode1","ASNode2"
+#$DomainFQDN=$env:USERDNSDOMAIN
+#$ClusterName="ASClus01"
+#$Prefix="ASClus01"
+$LCMUserName="ASClus01-LCMUser"
+$LCMPassword="LS1setup!LS1setup!"
+$SecuredPassword = ConvertTo-SecureString $LCMPassword -AsPlainText -Force
+$LCMCredentials= New-Object System.Management.Automation.PSCredential ($LCMUserName,$SecuredPassword)
 
 #install posh module for prestaging Active Directory
 Install-PackageProvider -Name NuGet -Force
@@ -94,12 +94,14 @@ Install-Module AsHciADArtifactsPreCreationTool -Repository PSGallery -Force
 ```
 **Step 2** Populate objects into Active Directory
 
+> note: in 2402 release is just OU and LCM user deployed and GPO inheritance blocked on OU
+
 ```PowerShell
     #make sure active directory module and GPMC is installed
     Install-WindowsFeature -Name RSAT-AD-PowerShell,GPMC
 
     #populate objects
-    New-HciAdObjectsPreCreation -Deploy -AzureStackLCMUserCredential  $Credentials -AsHciOUName $AsHCIOUName -AsHciPhysicalNodeList $Servers -DomainFQDN $DomainFQDN -AsHciClusterName $ClusterName -AsHciDeploymentPrefix $Prefix
+    New-HciAdObjectsPreCreation -AzureStackLCMUserCredential $LCMCredentials -AsHciOUName $AsHCIOUName
  
 ```
 
@@ -198,6 +200,8 @@ Set-Item WSMan:\localhost\Client\TrustedHosts -Value $($TrustedHosts -join ',') 
 
 > Below code is using virtual account to kick off deployment of updates via COM. With virtual account it will be ran under with local system account instead of user account. If I would use user account remotely, it would fail.
 
+> Cumulative updates are optional
+
 ```PowerShell
 Invoke-Command -ComputerName $servers -ScriptBlock {
     Enable-WindowsOptionalFeature -FeatureName Microsoft-Hyper-V -Online -NoRestart
@@ -280,7 +284,17 @@ Invoke-Command -ComputerName $Servers -ScriptBlock {
  
 ```
 
-**Step 5** Deploy ARC agent with Invoke-AzStackHCIarcInitialization
+**Step 5** Make sure resource providers are registered
+
+```PowerShell
+Register-AzResourceProvider -ProviderNamespace "Microsoft.HybridCompute"
+Register-AzResourceProvider -ProviderNamespace "Microsoft.GuestConfiguration"
+Register-AzResourceProvider -ProviderNamespace "Microsoft.HybridConnectivity"
+Register-AzResourceProvider -ProviderNamespace "Microsoft.AzureStackHCI"
+ 
+```
+
+**Step 6** Deploy ARC agent with Invoke-AzStackHCIarcInitialization
 
 ```PowerShell
 #deploy ARC Agent
@@ -312,7 +326,37 @@ Invoke-Command -ComputerName $Servers -ScriptBlock {
  
 ```
 
-**Step 2** Configure current user to be Keay Vault Administrator on ASClus01 resource group
+
+**Step 2** Configure NTP Server
+
+First you need to disable Timesync from Hyper-V. Run following command on Hyper-V Host!
+
+```PowerShell
+Get-VM *ASNode* | Disable-VMIntegrationService -Name "Time Synchronization"
+
+```
+
+And after that you can run following command from management machine to configure NTP Server
+
+```PowerShell
+$NTPServer="DC.corp.contoso.com"
+Invoke-Command -ComputerName $servers -ScriptBlock {
+    w32tm /config /manualpeerlist:$using:NTPServer /syncfromflags:manual /update
+    Restart-Service w32time
+} -Credential $Credentials
+
+Start-Sleep 20
+
+#check if source is NTP Server
+Invoke-Command -ComputerName $servers -ScriptBlock {
+    w32tm /query /source
+} -Credential $Credentials
+ 
+```
+
+![](./media/powershell09.png)
+
+**Step 3** Configure current user to be Key Vault Administrator on ASClus01 resource group
 
 ```PowerShell
 #add key vault admin of current user to Resource Group
@@ -323,7 +367,7 @@ Invoke-Command -ComputerName $Servers -ScriptBlock {
 
 ![](./media/edge04.png)
 
-**Step 3** Configure new admin password on nodes (as Cloud Deployment requires at least 12chars)
+**Step 4** Configure new admin password on nodes (as Cloud Deployment requires at least 12chars)
 
 ```PowerShell
 #change password of local admin to be at least 12 chars
@@ -361,8 +405,8 @@ Networking
     Network adapter 2:          Ethernet 2
     Network adapter 2 VLAN ID:  712 (default)
 
-    Starting IP:                10.0.0.100
-    ENding IP:                  10.0.0.110
+    Starting IP:                10.0.0.111
+    ENding IP:                  10.0.0.116
     Subnet mask:                255.255.255.0
     Default Gateway:            10.0.0.1
     DNS Server:                 10.0.0.1
@@ -410,9 +454,7 @@ Tags:
 
 ![](./media/edge13.png)
 
-**Step 3** Validation process will take some time. And if all goes OK, it will succesfully review cluster
-
-![](./media/edge14.png)
+**Step 3** Validation process will take some time. And if all goes OK, it will succesfully validate cluster
 
 ![](./media/edge15.png)
 

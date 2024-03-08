@@ -263,8 +263,8 @@
         #$Compliance=$Compliance | Out-GridView -OutputMode Multiple
 
         #Install Dell updates https://www.dell.com/support/home/en-us/product-support/product/system-update/docs
-        $UpdateNames=(($Compliance | Where-Object {$_.NodeName -eq $Node -and $_.compliancestatus -eq $false}).PackageFilePath | Split-Path -Leaf) -join ","
         Invoke-Command -ComputerName $servers -ScriptBlock {
+            $UpdateNames=(($using:Compliance | Where-Object {$_.ServerName -eq $env:computername -and $_.compliancestatus -eq $false}).PackageFilePath | Split-Path -Leaf) -join ","
             & "C:\Program Files\Dell\DELL System Update\DSU.exe" --update-list="$using:UpdateNames" --apply-upgrades --apply-downgrades
         }
     }
@@ -404,7 +404,6 @@
 #endregion
 
 #region configure what was/was not configured with NetATC
-    if ($NetATC){
         #region Configure what NetATC is not configuring
             #disable unused adapters
             Get-Netadapter -CimSession $Servers | Where-Object Status -ne "Up" | Disable-NetAdapter -Confirm:0
@@ -503,7 +502,6 @@
             Add-NetIntent -GlobalClusterOverrides $overrides -Cluster $ClusterName
         }
         #>
-    }
 #endregion
 
 #region Create Fault Domains (just an example) https://docs.microsoft.com/en-us/windows-server/failover-clustering/fault-domains

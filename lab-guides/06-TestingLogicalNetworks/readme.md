@@ -165,3 +165,302 @@ To test if networking works, simply add a NIC into Management VM and add VLAN 1
 if all works, vNIC will receive IP from correct subnet.
 
 ![](./media/hvmanager04.png)
+
+## Configure Logical Networks in Azure with PowerShell
+
+Following code will simpy create multiple networks in Azure Portal. You can either use PowerShell to deploy it, or you can click it in Portal.
+
+```PowerShell
+#Make sure failover clustering and Hyper-V PowerShell is installed
+Install-WindowsFeature -Name RSAT-Clustering,Hyper-V-PowerShell
+
+#download Azure modules
+$Modules="az.resources","Az.CustomLocation","Az.Accounts"
+foreach ($Module in $Modules){
+    if (!(Get-InstalledModule -Name $Module -ErrorAction Ignore)){
+        Install-Module -Name $Module -Force
+    }
+}
+
+#login to azure
+if (-not (Get-AzContext)){
+    Connect-AzAccount -UseDeviceAuthentication
+}
+
+#select subscription if more available
+    $subscriptions=Get-AzSubscription
+    if (($subscriptions).count -gt 1){
+        $SubscriptionID=($Subscriptions | Out-GridView -OutputMode Single -Title "Please Select Subscription").ID
+        $Subscriptions | Where-Object ID -eq $SubscriptionID | Select-AzSubscription
+    }else{
+        $SubscriptionID=$subscriptions.id
+    }
+ 
+
+#define variables
+
+$ClusterName="ASClus01"
+$ClusterNodes=(Get-ClusterNode -Cluster $ClusterName).Name
+$VirtualSwitchName=(Get-VMSwitch -CimSession $ClusterNodes[0]).Name
+$Location="EastUS"
+$ResourceGroupName="asclus01-rg"
+$CustomLocationID=(Get-AzCustomLocation -ResourceGroupName $ResourceGroupName).ID
+
+
+$Networks=@()
+$Networks+= @{ Name='Management'; ipAllocationMethod="Dynamic"; vlan=0 ; tags=[PSCustomObject]@{}}
+$Networks+= @{ Name='vNet01'; ipAllocationMethod="Dynamic"; vlan=1 ; tags=[PSCustomObject]@{}}
+$Networks+= @{ Name='vNet02'; ipAllocationMethod="Dynamic"; vlan=2 ; tags=[PSCustomObject]@{}}
+$Networks+= @{ Name='vNet03'; ipAllocationMethod="Static"; addressPrefix="10.0.3.0/24" ; vlan=3 ; ipPools=@("10.0.3.10","10.0.3.255") ; dnsServers=@("10.0.3.1") ; defaultGateway="10.0.3.1" ; tags=[PSCustomObject]@{}}
+$Networks+= @{ Name='vNet04'; ipAllocationMethod="Static"; addressPrefix="10.0.4.0/24" ; vlan=4 ; ipPools=@("10.0.4.10","10.0.4.255") ;dnsServers=@("10.0.4.1") ; defaultGateway="10.0.4.1" ; tags=[PSCustomObject]@{}}
+
+
+#create templates
+$staticTemplate = @"
+{
+    "`$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "name": {
+            "type": "String"
+        },
+        "ipAllocationMethod": {
+            "type": "String"
+        },
+        "addressPrefix": {
+            "type": "String"
+        },
+        "vlan": {
+            "type": "Int"
+        },
+        "location": {
+            "type": "String"
+        },
+        "customLocationId": {
+            "type": "String"
+        },
+        "vmSwitchName": {
+            "type": "String"
+        },
+        "tags": {
+            "type": "Object"
+        },
+        "ipPools": {
+            "type": "Array"
+        },
+        "dnsServers": {
+            "type": "Array"
+        },
+        "defaultGateway": {
+            "type": "String"
+        }
+    },
+    "resources": [
+        {
+            "type": "microsoft.azurestackhci/logicalnetworks",
+            "apiVersion": "2023-09-01-preview",
+            "name": "[parameters('name')]",
+            "location": "[parameters('location')]",
+            "extendedLocation": {
+                "type": "CustomLocation",
+                "name": "[parameters('customLocationId')]"
+            },
+            "tags": {},
+            "properties": {
+                "subnets": [
+                    {
+                        "name": "[parameters('name')]",
+                        "properties": {
+                            "ipAllocationMethod": "[parameters('ipAllocationMethod')]",
+                            "addressPrefix": "[parameters('addressPrefix')]",
+                            "vlan": "[parameters('vlan')]",
+                            "ipPools": "[parameters('ipPools')]",
+                            "routeTable": {
+                                "properties": {
+                                    "routes": [
+                                        {
+                                            "name": "[parameters('name')]",
+                                            "properties": {
+                                                "addressPrefix": "0.0.0.0/0",
+                                                "nextHopIpAddress": "[parameters('defaultGateway')]"
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                ],
+                "vmSwitchName": "[parameters('vmSwitchName')]",
+                "dhcpOptions": {
+                    "dnsServers": "[parameters('dnsServers')]"
+                }
+            }
+        }
+    ],
+    "outputs": {}
+}
+"@
+
+$DynamicTemplate=@"
+{
+    "`$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "name": {
+            "type": "String"
+        },
+        "ipAllocationMethod": {
+            "type": "String"
+        },
+        "vlan": {
+            "type": "Int"
+        },
+        "location": {
+            "type": "String"
+        },
+        "customLocationId": {
+            "type": "String"
+        },
+        "vmSwitchName": {
+            "type": "String"
+        },
+        "tags": {
+            "type": "Object"
+        }
+    },
+    "resources": [
+        {
+            "type": "microsoft.azurestackhci/logicalnetworks",
+            "apiVersion": "2023-09-01-preview",
+            "name": "[parameters('name')]",
+            "location": "[parameters('location')]",
+            "extendedLocation": {
+                "type": "CustomLocation",
+                "name": "[parameters('customLocationId')]"
+            },
+            "tags": {},
+            "properties": {
+                "subnets": [
+                    {
+                        "name": "[parameters('name')]",
+                        "properties": {
+                            "ipAllocationMethod": "[parameters('ipAllocationMethod')]",
+                            "vlan": "[parameters('vlan')]"
+                        }
+                    }
+                ],
+                "vmSwitchName": "[parameters('vmSwitchName')]"
+            }
+        }
+    ],
+    "outputs": {}
+}
+
+"@
+
+$templateFileStatic = New-TemporaryFile
+Set-Content -Path $templateFileStatic.FullName -Value $staticTemplate
+
+$templateFileDynamic = New-TemporaryFile
+Set-Content -Path $templateFileDynamic.FullName -Value $DynamicTemplate
+
+$ExistingNetworks=Get-AzResource -ResourceGroupName $ResourceGroupName -ResourceType microsoft.azurestackhci/logicalNetworks
+
+foreach ($Network in $Networks){
+    if (-not ($ExistingNetworks.Name -Contains $Network.Name)){
+        if ($Network.ipAllocationMethod -eq "Dynamic"){
+            $templateParameterObject = @{
+                name = $network.name
+                ipAllocationMethod = "Dynamic"
+                vlan=$Network.VLAN
+                location=$Location
+                customLocationId=$CustomLocationID
+                vmSwitchName=$VirtualSwitchName
+                tags=$Network.Tags
+            }
+            New-AzResourceGroupDeployment -ResourceGroupName $ResourceGroupName -TemplateFile $templateFileDynamic.FullName -TemplateParameterObject $templateParameterObject
+        }else{
+            #this dows not work
+            <#
+            $TemplateParameterObject = @{
+                name = $network.name
+                ipAllocationMethod = "Static"
+                addressPrefix = $Network.addressPrefix
+                vlan=$Network.VLAN
+                location=$Location
+                customLocationId=$CustomLocationID
+                vmSwitchName=$VirtualSwitchName
+                ipPools=$Network.IPPools
+                dnsServers=$Network.DNSServers
+                defaultGateway=$Network.DefaultGateway
+                tags=$Network.Tags
+            }
+            New-AzResourceGroupDeployment -ResourceGroupName $ResourceGroupName -TemplateFile $templateFileStatic.FullName -TemplateParameterObject $templateParameterObject
+            #>
+            #Create parameter file
+            $ParamFile=@"
+{
+    "`$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "name": {
+            "value": "$($network.name)"
+        },
+        "ipAllocationMethod": {
+            "value": "Static"
+        },
+        "addressPrefix": {
+            "value": "$($Network.addressPrefix)"
+        },
+        "vlan": {
+            "value": $($Network.VLAN)
+        },
+        "location": {
+            "value": "$Location"
+        },
+        "customLocationId": {
+            "value": "$CustomLocationID"
+        },
+        "vmSwitchName": {
+            "value": "$VirtualSwitchName"
+        },
+        "tags": {
+            "value": {}
+        },
+        "ipPools": {
+            "value": [
+                {
+                    "start": "$($Network.IPPools[0])",
+                    "end": "$($Network.IPPools[1])"
+                }
+            ]
+        },
+        "dnsServers": {
+            "value": [
+                "$($Network.DNSServers)"
+            ]
+        },
+        "defaultGateway": {
+            "value": "$($Network.DefaultGateway)"
+        }
+    }
+}
+"@
+        $parameterfile = New-TemporaryFile
+        Set-Content -Path $parameterfile.FullName -Value $ParamFile
+        New-AzResourceGroupDeployment -ResourceGroupName $ResourceGroupName -TemplateFile $templateFileStatic.FullName -TemplateParameterFile $parameterfile.FullName
+        Remove-Item $parameterfile.FullName
+        }
+
+    }else{
+        Write-Output "$($Network.Name) network already exists"
+    }
+}
+Remove-Item $templateFileStatic.FullName
+Remove-Item $templateFileDynamic.FullName
+ 
+```
+
+
+![](./media/edge01.png)

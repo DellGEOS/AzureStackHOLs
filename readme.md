@@ -27,6 +27,10 @@ Guides focused at deploying and operation of Azure Stack HCI Clusters
 * [05 Testing Windows Server 2025 Insider Preview](lab-guides/05-TestingWindowsServerInsider/)
 * [06 Testing Logical Networks in Azure Stack HCI 23H2](lab-guides/06-TestingLogicalNetworks/)
 
+# Tips & Tricks
+
+* [01 Generate Environmental Checker URLs](tips&tricks/01-EnvironmentalCheckerURLs/)
+
 # Deprecated labs
 
 * [Deploy Azure Virtual Desktop](deprecated/DeployAVDonAzureStackHCI/)

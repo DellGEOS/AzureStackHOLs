@@ -9,6 +9,7 @@
     - [PowerShell Script](#powershell-script)
     - [Explore what was configured](#explore-what-was-configured)
     - [Testing if networking is working](#testing-if-networking-is-working)
+    - [Configure Logical Networks in Azure with PowerShell](#configure-logical-networks-in-azure-with-powershell)
 
 <!-- /TOC -->
 

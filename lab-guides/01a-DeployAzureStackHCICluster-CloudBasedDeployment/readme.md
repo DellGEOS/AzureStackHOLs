@@ -420,7 +420,7 @@ Management
     OU:                         OU=ASClus01,DC=Corp,DC=contoso,DC=com
 
     Deployment account:
-        Username:               ASClus01-DeployUser
+        Username:               ASClus01-LCMUser
         Password:               LS1setup!LS1setup!
 
     Local Administrator

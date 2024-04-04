@@ -25,6 +25,7 @@ Guides focused at deploying and operation of Azure Stack HCI Clusters
 * [03 Test Azure Stack HCI performance with VMFleet](lab-guides/03-TestPerformanceWithVMFleet/)
 * [04 Explore Azure Stack HCI Cluster Maintenance (Deep Dive)](lab-guides/04-AzSHCIClusterMaintenanceDeepDive/)
 * [05 Testing Windows Server 2025 Insider Preview](lab-guides/05-TestingWindowsServerInsider/)
+* [06 Testing Logical Networks in Azure Stack HCI 23H2](lab-guides/06-TestingLogicalNetworks/)
 
 # Deprecated labs
 

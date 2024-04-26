@@ -109,7 +109,6 @@ Install-Module AsHciADArtifactsPreCreationTool -Repository PSGallery -Force
 
 ![](./media/dsa01.png)
 
-
 **Step 3** Install additional features to be able explore cluster and settings once it's created
 
 ```PowerShell

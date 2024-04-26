@@ -1,5 +1,7 @@
 Recently I learned, that [Microsoft Documentation](https://learn.microsoft.com/en-us/azure-stack/hci/concepts/firewall-requirements) is/was missing several URLs that were later tested with [Azure Stack HCI Environmental Checker](https://learn.microsoft.com/en-us/azure-stack/hci/manage/use-environment-checker?tabs=connectivity).
 
+I also learned that the environmental checker is not checking all URL like [Kubernetes URLs](https://learn.microsoft.com/en-us/azure/aks/hybrid/aks-hci-network-system-requirements#firewall-url-exceptions)
+
 Let's take a look what URLs are actually tested.
 
 ```PowerShell

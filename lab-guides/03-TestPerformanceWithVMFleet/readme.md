@@ -18,53 +18,76 @@ In this lab you will learn about how to test performance of Azure Stack HCI clus
 
 The lab is based on [AzSHCI and VMFleet](https://github.com/microsoft/MSLab/tree/dev/Scenarios/AzSHCI%20and%20VMFleet) MSLab scenario.
 
-Creating vmfleet image needs to be performed from parentdisks folder.
-
-Ther rest of lab can be run from management machine or from DC (in MSLab).
-
-Keep PowerShell window open for entire lab
-
 ## Prerequsites
 
-The main prerequisite is to have Azure Stack HCI cluster where you can deploy VMFleet
+The main prerequisite is to have Azure Stack HCI cluster where you can deploy VMFleet.
 
-To perform following lab you can setup cluster using guides below:
+Next you'll need Windows Server ISO and three scripts [CreateParentDisk.ps1](https://github.com/microsoft/MSLab/blob/master/Tools/CreateParentDisk.ps1),[Convert-WindowsImage.ps1 (downloaded automatically)](https://github.com/microsoft/MSLab/blob/master/Tools/Convert-WindowsImage.ps1),[CreateVMFleetDisk.ps1](https://github.com/microsoft/MSLab/blob/master/Tools/CreateVMFleetDisk.ps1)
 
-* Hydrate MSLab with LabConfig from [01-HydrateMSLab](../../admin-guides/01-HydrateMSLab/readme.md)
+The machine where these tasks will be executed needs to have Hyper-V, and Hyper-V PowerShell module installed.
 
-* [Learn How MSLab works](../../admin-guides/02-WorkingWithMSLab/readme.md)
+In the lab several PowerShell modules will be downloaded.
 
-* [Deploy OS on hardware](../../admin-guides/03-DeployPhysicalServersWithMSLab/readme.md)
+## Task 01 - Create Windows Server 2022 Core VHD
 
-* [Deploy Azure Stack HCI with PowerShell](../../lab-guides/02-DeployAzureStackHCICluster-PowerShell/readme.md)
+To create Windows Server 2022 VHD you will need ISO file. Both ISO and VHD can be downloaded from [Windows Server Evaluation Center](https://www.microsoft.com/en-us/evalcenter/download-windows-server-2022), however I would recommend creating your own VHD as VHD is 127GB. Since during VMFLeet creation is VHD converted to fixed VHD, it will expand and may consume your storage. It's better to create your own taht is smaller (like 30GB)
 
-## Task 01 - Create vmfleet image
+You can also use any other ISO, just make sure it contains install.wim in sources directory.
 
-> Note: Microsoft docs are documenting vmfleet image creation with manual steps including capturing state. In MSLab is helper script that helps creating vmfleet image from any other parent VHD.
+**Step 1** Download [CreateParentDisk.ps1](https://github.com/microsoft/MSLab/blob/master/Tools/CreateParentDisk.ps1) script. 
 
-**Step 1** In MSLab folder, navigate into parentdisks folder and run [CreateVMFleetDisk.ps1](https://github.com/microsoft/MSLab/blob/master/Tools/CreateVMFleetDisk.ps1) by right-clicking it and selecting run with PowerShell.
+> This script will also download [Convert-WindowsImage.ps1](https://github.com/microsoft/MSLab/blob/master/Tools/Convert-WindowsImage.ps1) script. If you are working in offline environment, simply download it too and place into same directory. 
+
+> Converting image needs Hyper-V PowerShell module and also Hyper-V itself (to work with VHDs.). If you work with these images inside a VM, you might need to install Hyper-V with following script
+
+```PowerShell
+    #install Hyper-V using DISM
+    Enable-WindowsOptionalFeature -FeatureName Microsoft-Hyper-V -Online -All -NoRestart
+ 
+```
+
+**Step 2** Run CreateParentDisk.ps1 by right-clicking and selecting "Run with PowerShell".
 
 ![](./media/explorer01.png)
 
-**Step 2** Script will ask for VHD. Since VMFleet requires Windows Server Core, you can provide Win2022Core_G2.vhdx.
-
-> Note: Windows Server Core VHD can be created using [CreateParentDisk.ps1](https://github.com/microsoft/MSLab/blob/master/Tools/CreateParentDisk.ps1). The similar process (but how to create Azure Stack HCI VHD) is described in [Hydrate MSLab guide](../../admin-guides/01-HydrateMSLab#task-4---create-azure-stack-hci-parent-disk)
+**Step 3** Once asked, provide Windows Server 2022 ISO. Hit cancel to skip msu (cumulative update).
 
 ![](./media/powershell01.png)
 
-**Step 3** Script will ask for password that will be used for administrator. Provide **P@ssw0rd** as administrator password. VMFleet image will be created.
+**Step 4** Select Windows Server 2022 Datacenter or Standard (core)
 
 ![](./media/powershell02.png)
 
-**Step 4** Copy FleetImage.vhdx into DC (or management machine). You can use ctrl+c/ctrl+v. 
+**Step 5** Hit Enter (keep default name) and type 30 for 30GB vhd size
+
+![](./media/powershell03.png)
+
+as result, VHD will be created
+
+![](./media/powershell04.png)
+
+## Task 02 - Create vmfleet image
+
+**Step 1** Download [CreateVMFleetDisk.ps1](https://github.com/microsoft/MSLab/blob/master/Tools/CreateVMFleetDisk.ps1) script. 
+
+**Step 2** Run CreateVMFleetDisk.ps1 by right-clicking and selecting run with PowerShell
 
 ![](./media/explorer02.png)
 
+**Step 3** Once asked, provide VHD create in previous step
+
+![](./media/powershell05.png)
+
+**Step 4** Script will ask for password that will be used for administrator. Provide **P@ssw0rd** as administrator password. VMFleet image will be created.
+
+![](./media/powershell06.png)
+
+
 ## Task 02 - Configure VMFleet prerequsites
 
-> Note: Run all steps from DC or Management machine
+> Note: Run all steps from your management machine
 
-**Step 1** While logged into DC or management machine, Install required PowerShell modules using following PowerShell Script
+**Step 1** While logged into management machine, Install required PowerShell modules using following PowerShell Script
 
 ```PowerShell
     Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
@@ -79,32 +102,25 @@ To perform following lab you can setup cluster using guides below:
     $ClusterName="AzSHCI-Cluster"
     $Nodes=(Get-ClusterNode -Cluster $ClusterName).Name
     $VolumeSize=1TB
+    $StoragePool=Get-StoragePool -CimSession mcclus02 | Where-Object OtherUsageDescription -eq "Reserved for S2D"
 
-    #configure thin volumes a default if available (because why not :)
-    $OSInfo=Invoke-Command -ComputerName $ClusterName -ScriptBlock {
-        Get-ItemProperty -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\'
-    }
-    if ($OSInfo.productname -eq "Azure Stack HCI" -and $OSInfo.CurrentBuildNumber -ge 20348){
-        Get-StoragePool -CimSession $ClusterName -FriendlyName S2D* | Set-StoragePool -ProvisioningTypeDefault Thin
-    }
-
-    #Create Volumes for VMs
+    #Create Volumes for VMs (thin provisioned)
     Foreach ($Node in $Nodes){
         if (-not (Get-Virtualdisk -CimSession $ClusterName -FriendlyName $Node -ErrorAction Ignore)){
-            New-Volume -CimSession $Node -StoragePoolFriendlyName "S2D on $ClusterName" -FileSystem CSVFS_ReFS -FriendlyName $Node -Size $VolumeSize
+            New-Volume -CimSession $Node -StoragePool $StoragePool -FileSystem CSVFS_ReFS -FriendlyName $Node -Size $VolumeSize -ProvisioningType Thin
         }
     }
 
-    #Create Collect volume
+    #Create Collect volume (thin provisioned)
     if (-not (Get-Virtualdisk -CimSession $ClusterName -FriendlyName Collect -ErrorAction Ignore)){
-        New-Volume -CimSession $CLusterName -StoragePoolFriendlyName "S2D on $ClusterName" -FileSystem CSVFS_ReFS -FriendlyName Collect -Size 100GB
+        New-Volume -CimSession $CLusterName -StoragePool $StoragePool -FileSystem CSVFS_ReFS -FriendlyName Collect -Size 100GB -ProvisioningType Thin
     }
  
 ```
 
 Expected result
 
-![](./media/powershell03.png)
+![](./media/powershell07.png)
 
 ![](./media/cluadmin01.png)
 
@@ -150,14 +166,13 @@ Expected result
         #generate VHD Name from path (path was created when you were asked for VHD)
         $VHDName=$VHDPath | Split-Path -Leaf
 
-        $ClusterName="AzSHCI-Cluster"
-        $Nodes=(Get-ClusterNode -Cluster $ClusterName).Name
-
         #domain account credentials
         $AdminUsername="CORP\LabAdmin"
         $AdminPassword="LS1setup!"
         $securedpassword = ConvertTo-SecureString $AdminPassword -AsPlainText -Force
         $Credentials = New-Object System.Management.Automation.PSCredential ($AdminUsername, $securedpassword)
+        #Or simply ask for credentials
+        #$Credentials=Get-Credential
         #credentials for local admin located in FleetImage VHD
         $VHDAdminPassword="P@ssw0rd"
  
@@ -202,7 +217,7 @@ Expected result
 
 Expected result
 
-![](./media/powershell04.png)
+![](./media/powershell08.png)
 
 ![](./media/cluadmin02.png)
 
@@ -232,7 +247,16 @@ Expected result
 
 ![](./media/explorer06.png)
 
-**Step 6** Explore performance results by copying result.tsv to a computer, where excel is installed. Open result in excel and insert a table. You can review [sample result](./media/AX6515-All-Flash-4xSSD-32VMs-2Node.txt). 
+**Step 6** Monitor progress - run following command to open Watch-FleetCluster dashboard
+
+```PowerShell
+Watch-FleetCluster -Cluster <ClusterName> -Sets *
+ 
+```
+
+![](./media/powershell09.png)
+
+**Step 7** Explore performance results by copying result.tsv to a computer, where excel is installed. Open result in excel and insert a table. You can review [sample result](./media/AX6515-All-Flash-4xSSD-32VMs-2Node.txt). 
 
 ![](./media/excel01.png)
 

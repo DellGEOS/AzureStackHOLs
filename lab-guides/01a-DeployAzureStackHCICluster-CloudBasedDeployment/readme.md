@@ -404,6 +404,11 @@ Networking
     Network adapter 2:          Ethernet 2
     Network adapter 2 VLAN ID:  712 (default)
 
+    Customize network settings
+    Adapter Properties > Jumbo Frame Size: 1514
+    Adapter Properties > RDMA Protocol: Disabled
+   # Use RDMA disabled if you are deploying via MSLab, use enabled if your NICs are supported for RDMA
+
     Starting IP:                10.0.0.111
     ENding IP:                  10.0.0.116
     Subnet mask:                255.255.255.0

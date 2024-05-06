@@ -221,7 +221,32 @@ Script should return list of nodes that attempted to boot in last 5 minutes
 
 ![](./media/powershell02.png)
 
-## Configure MDT Database and Active Directory Object
+## Configure WDS to answer all clients
+
+Since Azure Stack HCI 23H2 requires machines to be not domain joined, we will not create AD objects to control who can/cannot boot. Let's disable it
+
+**1.** Disable authenticated PXE boot by configuring WDS to respond all requests
+
+```PowerShell
+# Temporarily enable CredSSP delegation to avoid double-hop issue
+winrm quickconfig -force #on client is winrm not configured
+Enable-WSManCredSSP -Role "Client" -DelegateComputer $MDTServer -Force
+Invoke-Command -ComputerName $MDTServer -ScriptBlock { Enable-WSManCredSSP Server -Force }
+
+$SecureStringPassword = ConvertTo-SecureString $CredSSPPassword -AsPlainText -Force
+$Credentials = New-Object System.Management.Automation.PSCredential ($CredSSPUserName, $SecureStringPassword)
+
+#Configure WDS to answer all clients (since machines are not in AD as known clients)
+Invoke-Command -ComputerName $MDTServer -Credential $Credentials -Authentication Credssp -ScriptBlock {
+    wdsutil.exe /Set-Server /AnswerClients:All
+    wdsutil.exe /Set-Server /PxePromptPolicy /known:Noprompt /new:Noprompt
+    #wdsutil.exe /Set-Server /PxePromptPolicy /known:Noprompt /new:abort
+}
+
+
+```
+
+## Configure MDT Database
 
 **1.** If you skipped last task, make sure you have hash table with your AX Nodes. You can find example below.
 
@@ -238,10 +263,9 @@ Script should return list of nodes that attempted to boot in last 5 minutes
 
 ### Expected result
 
-* two applications configured in MDT (Dell DSU and Dell DSU AzSHCI Package)
+* two applications configured in MDT (Dell DSU and Dell DSU Install Script)
 * AXNodeDrivers role added to Database
 * Servers Added to Database
-
 
 
 ## Restart Servers to Install Operating system

@@ -7,15 +7,17 @@ $WDSRoot="D:\RemoteInstall"
 $DHCPServer="DC"
 $ScopeID="10.0.0.0"
 
+$CredSSPUserName="CORP\LabAdmin"
+$CredSSPPassword="LS1setup!"
 #endregion
 
 #region prereqs
 #install management features (ADDS, DHCP,...)
 $WindowsInstallationType=Get-ItemPropertyValue -Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\' -Name InstallationType
 If ($WindowsInstallationType -like "Server*"){
-    Install-WindowsFeature -Name "RSAT-AD-PowerShell","RSAT-ADDS","RSAT-DHCP"
+    Install-WindowsFeature -Name "RSAT-AD-PowerShell","RSAT-ADDS","RSAT-DHCP","RSAT-DNS-Server","WDS-AdminPack"
 }else{
-    $Capabilities="Rsat.ServerManager.Tools~~~~0.0.1.0","Rsat.DHCP.Tools~~~~0.0.1.0","Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0"
+    $Capabilities="Rsat.ServerManager.Tools~~~~0.0.1.0","Rsat.DHCP.Tools~~~~0.0.1.0","Rsat.ActiveDirectory.DS-LDS.Tools~~~~0.0.1.0","Rsat.Dns.Tools~~~~0.0.1.0"
     foreach ($Capability in $Capabilities){
         Add-WindowsCapability -Name $Capability -Online
     }
@@ -24,15 +26,21 @@ If ($WindowsInstallationType -like "Server*"){
 #download and install binaries
     #Download files
     $files=@()
-    #$Files+=@{Uri="https://go.microsoft.com/fwlink/?linkid=2026036" ; FileName="adksetup.exe" ; Description="Windows 10 ADK 1809"}
-    #$Files+=@{Uri="https://go.microsoft.com/fwlink/?linkid=2022233" ; FileName="adkwinpesetup.exe" ; Description="WindowsPE 1809"}
-    $Files+=@{Uri="https://go.microsoft.com/fwlink/?linkid=2165884" ; FileName="adksetup.exe" ; Description="Windows 11 21H2 ADK"}
-    $Files+=@{Uri="https://go.microsoft.com/fwlink/?linkid=2166133" ; FileName="adkwinpesetup.exe" ; Description="WindowsPE for Windows 11 21H2"}
+    $Files+=@{Uri="https://go.microsoft.com/fwlink/?linkid=2196127" ; FileName="adksetup.exe" ; Description="Windows 11 22H2 ADK"}
+    $Files+=@{Uri="https://go.microsoft.com/fwlink/?linkid=2196224" ; FileName="adkwinpesetup.exe" ; Description="WindowsPE for Windows 11 22H2"}
+    #$Files+=@{Uri="https://go.microsoft.com/fwlink/?linkid=2243390" ; FileName="adksetup.exe" ; Description="Windows 11 23H2 ADK"}
+    #$Files+=@{Uri="https://go.microsoft.com/fwlink/?linkid=2243391" ; FileName="adkwinpesetup.exe" ; Description="WindowsPE for Windows 11 23H2"}
+    #$Files+=@{Uri="https://catalog.sf.dl.delivery.mp.microsoft.com/filestreamingservice/files/5df19636-5b93-4aaa-865d-48b8d349d828/public/windows11.0-kb5034130-x64_b3cf34a9418baf27d88e2760c940e49875be9849.msu" ; FileName="WindowsServer23H2_CU.msu" ; Description="Cumulative update for Windows Server 23H2 (January 2024)"}
     $Files+=@{Uri="https://download.microsoft.com/download/3/3/9/339BE62D-B4B8-4956-B58D-73C4685FC492/MicrosoftDeploymentToolkit_x64.msi" ; FileName="MicrosoftDeploymentToolkit_x64.msi" ; Description="Microsoft Deployment Toolkit"}
     #$Files+=@{Uri="https://software-download.microsoft.com/download/pr/AzureStackHCI_17784.1408_EN-US.iso" ; FileName="AzureStackHCI_17784.1408_EN-US.iso" ; Description="Azure Stack HCI ISO"}
-    $Files+=@{Uri="https://software-static.download.prss.microsoft.com/sg/download/888969d5-f34g-4e03-ac9d-1f9786c66749/AzureStackHCI_20348.587_en-us.iso" ; FileName="AzureStackHCI_20348.587_en-us.iso" ; Description="Azure Stack HCI ISO"}
-    $Files+=@{Uri="https://go.microsoft.com/fwlink/?linkid=866658" ; FileName="SQL2019-SSEI-Expr.exe" ; Description="SQL Express 2019"}
+    #$Files+=@{Uri="https://software-static.download.prss.microsoft.com/sg/download/888969d5-f34g-4e03-ac9d-1f9786c66749/AzureStackHCI_20348.587_en-us.iso" ; FileName="AzureStackHCI_20348.587_en-us.iso" ; Description="Azure Stack HCI ISO"}
+    #$Files+=@{Uri="https://software-static.download.prss.microsoft.com/dbazure/888969d5-f34g-4e03-ac9d-1f9786c66750/AzureStackHCI_20349.1607_en-us.iso" ; FileName="AzureStackHCI_20349.1607_en-us.iso" ; Description="Azure Stack HCI ISO"}
+    $Files+=@{Uri="https://software-static.download.prss.microsoft.com/dbazure/888969d5-f34g-4e03-ac9d-1f9786c66749/25398.469.231004-1141.zn_release_svc_refresh_SERVERAZURESTACKHCICOR_OEMRET_x64FRE_en-us.iso" ; FileName="25398.469.231004-1141.zn_release_svc_refresh_SERVERAZURESTACKHCICOR_OEMRET_x64FRE_en-us.iso" ; Description="Azure Stack HCI ISO"}
+    #$Files+=@{Uri="https://go.microsoft.com/fwlink/?linkid=866658" ; FileName="SQL2019-SSEI-Expr.exe" ; Description="SQL Express 2019"}
+    $Files+=@{Uri="https://download.microsoft.com/download/5/1/4/5145fe04-4d30-4b85-b0d1-39533663a2f1/SQL2022-SSEI-Expr.exe" ; FileName="SQL2022-SSEI-Expr.exe" ; Description="SQL Express 2022"}
     #$Files+=@{Uri="https://aka.ms/ssmsfullsetup" ; FileName="SSMS-Setup-ENU.exe" ; Description="SQL Management Studio"}
+    $Files+=@{Uri="https://downloadmirror.intel.com/812544/Wired_driver_28.3_x64.zip" ; FileName="Intel_Wired_Driver.zip" ; Description="Intel Network Adapter driver v28.3 (E810)"}
+
     foreach ($file in $files){
         if (-not (Test-Path "$downloadfolder\$($file.filename)")){
             Start-BitsTransfer -Source $file.uri -Destination "$downloadfolder\$($file.filename)" -DisplayName "Downloading: $($file.filename)"
@@ -75,13 +83,13 @@ If ($WindowsInstallationType -like "Server*"){
         Enable-WSManCredSSP -Role "Client" -DelegateComputer $MDTServer -Force
         Invoke-Command -ComputerName $MDTServer -ScriptBlock { Enable-WSManCredSSP Server -Force }
 
-        $password = ConvertTo-SecureString "LS1setup!" -AsPlainText -Force
-        $Credentials = New-Object System.Management.Automation.PSCredential ("$env:userdomain\LabAdmin", $password)
+        $SecureStringPassword = ConvertTo-SecureString $CredSSPPassword -AsPlainText -Force
+        $Credentials = New-Object System.Management.Automation.PSCredential ($CredSSPUserName, $SecureStringPassword)
 
         Invoke-Command -ComputerName $MDTServer -Credential $Credentials -Authentication Credssp -ScriptBlock {
             $downloadfolder="D:\Install"
             #install
-            $exec="$downloadfolder\SQL2019-SSEI-Expr.exe"
+            $exec="$downloadfolder\SQL2022-SSEI-Expr.exe"
             $params="/Action=Install /MediaPath=$downloadfolder\SQLMedia /IAcceptSqlServerLicenseTerms /quiet"
             Start-Process -FilePath $exec -ArgumentList $params -NoNewWindow -Wait
         }
@@ -116,13 +124,13 @@ do{
 Invoke-Command -ComputerName $MDTServer -scriptblock {
     if ($using:Connection -eq "NamedPipes"){
         #Named Pipes
-        Set-ItemProperty -Path "hklm:\\SOFTWARE\Microsoft\Microsoft SQL Server\MSSQL15.SQLEXPRESS\MSSQLServer\SuperSocketNetLib\Np\" -Name Enabled -Value 1
+        Set-ItemProperty -Path "hklm:\\SOFTWARE\Microsoft\Microsoft SQL Server\MSSQL16.SQLEXPRESS\MSSQLServer\SuperSocketNetLib\Np\" -Name Enabled -Value 1
     }
 
     if ($using:Connection -eq "TCPIP"){
         #TCP
-        Set-ItemProperty -Path "hklm:\\SOFTWARE\Microsoft\Microsoft SQL Server\MSSQL15.SQLEXPRESS\MSSQLServer\SuperSocketNetLib\Tcp\" -Name Enabled -Value 1
-        Set-ItemProperty -Path "hklm:\\SOFTWARE\Microsoft\Microsoft SQL Server\MSSQL15.SQLEXPRESS\MSSQLServer\SuperSocketNetLib\Tcp\IPAll" -Name TcpPort -Value 1433
+        Set-ItemProperty -Path "hklm:\\SOFTWARE\Microsoft\Microsoft SQL Server\MSSQL16.SQLEXPRESS\MSSQLServer\SuperSocketNetLib\Tcp\" -Name Enabled -Value 1
+        Set-ItemProperty -Path "hklm:\\SOFTWARE\Microsoft\Microsoft SQL Server\MSSQL16.SQLEXPRESS\MSSQLServer\SuperSocketNetLib\Tcp\IPAll" -Name TcpPort -Value 1433
     }
 
     Restart-Service 'MSSQL$SQLEXPRESS'
@@ -141,7 +149,7 @@ Invoke-Command -ComputerName $MDTServer -scriptblock {
         -Description "Inbound rule for SQL. [TCP-1433]" `
         -Enabled True `
         -Direction Inbound `
-        -Program "%ProgramFiles%\Microsoft SQL Server\MSSQL15.SQLEXPRESS\MSSQL\Binn\sqlservr.exe" `
+        -Program "%ProgramFiles%\Microsoft SQL Server\MSSQL16.SQLEXPRESS\MSSQL\Binn\sqlservr.exe" `
         -Protocol TCP `
         -LocalPort 1433 `
         -Profile Any `
@@ -172,24 +180,110 @@ if ($Connection -eq "NamedPipes"){
 }
 
 #Import Operating System
-$ISO = Mount-DiskImage -ImagePath "$downloadfolder\AzureStackHCI_20348.587.iso" -PassThru
+$ISO = Mount-DiskImage -ImagePath "$downloadfolder\25398.469.231004-1141.zn_release_svc_refresh_SERVERAZURESTACKHCICOR_OEMRET_x64FRE_en-us.iso" -PassThru
 $ISOMediaPath = (Get-Volume -DiskImage $ISO).DriveLetter+':\'
 Import-mdtoperatingsystem -path "DS001:\Operating Systems" -SourcePath $ISOMediaPath -DestinationFolder "Azure Stack HCI SERVERAZURESTACKHCICORE x64" -Verbose
 
 $ISO | Dismount-DiskImage
 
+    #region patch WinPE 23H2
+    <# I was testing this for 23H2 WinPE
+        #https://github.com/DeploymentResearch/DRFiles/blob/master/Scripts/MDTVBScript/Update-ADK25398BootImageInstallFolderWithCU.ps1
+        #https://www.deploymentresearch.com/fixing-vbscript-support-in-windows-adk-sep-2023-update-build-25398/
+
+        # Set path to the Windows Update for Windows Server, version 23H2 (used for ADK WinPE version 25398)
+        $WinPECU = "$downloadfolder\windows1123H2_CU.msu"
+
+        # Set architecture and mount folder
+        $WinPEArchitecture = "amd64"
+        $WinPEMountFolder = "C:\Mount"
+
+        # Get ADK folders
+        $InstalledRoots = 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows Kits\Installed Roots'
+        $KitsRoot10 = Get-ItemPropertyValue -Path $InstalledRoots -Name 'KitsRoot10'
+        $AdkRoot = Join-Path $KitsRoot10 'Assessment and Deployment Kit'
+        $WinPERoot = Join-Path $AdkRoot 'Windows Preinstallation Environment'
+        $WinPEOCsRoot = Join-Path $WinPERoot\$WinPEArchitecture 'WinPE_OCs'
+        $DeploymentToolsRoot = Join-Path $AdkRoot (Join-Path 'Deployment Tools' $WinPEArchitecture)
+        $WinPERoot = Join-Path $WinPERoot $WinPEArchitecture
+
+        # Set path to dism.exe
+        $DISMFile = Join-Path $DeploymentToolsRoot 'DISM\Dism.exe'
+
+        # Set path to CU to the boot image
+        $BootImage = "$WinPERoot\en-us\winpe.wim"
+
+        # Verify that files and folder exist
+        If (!(Test-Path $DISMFile)){ Write-Warning "DISM in Windows ADK not found, aborting..."; Break }
+        if (!(Test-Path -path $WinPECU)) {Write-Warning "Could not find the Windows Server, version 23H2 update. Aborting...";Break}
+        if (!(Test-Path -path $BootImage)) {Write-Warning "Could not find Boot image. Aborting...";Break}
+
+        # Create Mount folder if it does not exist
+        if (!(Test-Path -path $WinPEMountFolder)) {New-Item -path $WinPEMountFolder -ItemType Directory}
+
+        # Backup the Boot image
+        Copy-Item -Path $BootImage -Destination "$($BootImage).bak"
+
+        # Mount the Boot image
+        Mount-WindowsImage -ImagePath $BootImage -Index 1 -Path $WinPEMountFolder
+
+        # Add native WinPE optional component required by MDT (the ones you commented out in the LiteTouchPE.xml file)
+        # winpe-hta
+        # winpe-scripting
+        # winpe-wmi
+        # winpe-securestartup
+        # winpe-fmapi
+
+        & $DISMFile /Image:$WinPEMountFolder /Add-Package /PackagePath:$WinPEOCsRoot\WinPE-HTA.cab
+        & $DISMFile /Image:$WinPEMountFolder /Add-Package /PackagePath:$WinPEOCsRoot\en-us\WinPE-HTA_en-us.cab
+
+        & $DISMFile /Image:$WinPEMountFolder /Add-Package /PackagePath:$WinPEOCsRoot\WinPE-Scripting.cab
+        & $DISMFile /Image:$WinPEMountFolder /Add-Package /PackagePath:$WinPEOCsRoot\en-us\WinPE-Scripting_en-us.cab
+
+        & $DISMFile /Image:$WinPEMountFolder /Add-Package /PackagePath:$WinPEOCsRoot\WinPE-WMI.cab 
+        & $DISMFile /Image:$WinPEMountFolder /Add-Package /PackagePath:$WinPEOCsRoot\en-us\WinPE-WMI_en-us.cab
+
+        & $DISMFile /Image:$WinPEMountFolder /Add-Package /PackagePath:$WinPEOCsRoot\WinPE-SecureStartup.cab 
+        & $DISMFile /Image:$WinPEMountFolder /Add-Package /PackagePath:$WinPEOCsRoot\en-us\WinPE-SecureStartup_en-us.cab
+
+        & $DISMFile /Image:$WinPEMountFolder /Add-Package /PackagePath:$WinPEOCsRoot\WinPE-FMAPI.cab # Does not have a language file
+
+        # Add MDAC optional component required if using the Database in MDT
+        & $DISMFile /Image:$WinPEMountFolder /Add-Package /PackagePath:$WinPEOCsRoot\WinPE-MDAC.cab 
+        & $DISMFile /Image:$WinPEMountFolder /Add-Package /PackagePath:$WinPEOCsRoot\en-us\WinPE-MDAC_en-us.cab
+
+        # Add the Windows Server, version 23H2 Update to the Boot image
+        & $DISMFile /Image:$WinPEMountFolder /Add-Package /PackagePath:$WinPECU
+
+        # Component cleanup 
+        & $DISMFile /Cleanup-Image /Image:$WinPEMountFolder /Startcomponentcleanup /Resetbase
+
+        # Dismount the Boot image
+        DisMount-WindowsImage -Path $WinPEMountFolder -Save
+    #>
+    #endregion
+
 #configure Deployment Share properties
 Set-ItemProperty DS001:\ -name SupportX86 -value False
 Set-ItemProperty DS001:\ -name Boot.x86.GenerateLiteTouchISO -value False
-Set-ItemProperty DS001:\ -name Boot.x64.SelectionProfile -value "Nothing"
+Set-ItemProperty DS001:\ -name Boot.x64.SelectionProfile -value "All Drivers"
 Set-ItemProperty DS001:\ -name Boot.x64.IncludeNetworkDrivers -value True
 Set-ItemProperty DS001:\ -name Boot.x64.IncludeMassStorageDrivers -value True
 Set-ItemProperty DS001:\ -name Boot.x64.IncludeAllDrivers -value False
 Set-ItemProperty DS001:\ -name Boot.x64.GenerateGenericWIM -value True
-#add PowerShell
+
+#import Intel drivers
+Expand-Archive -Path $downloadfolder\Intel_Wired_Driver.zip -DestinationPath $DownloadFolder\IntelNICDriver
+$DriverFile=Get-Childitem -Path $downloadfolder\IntelNICDriver | Where-Object Name -Like Wired_Driver*
+Rename-Item -Path $DriverFile.FullName -NewName "$($DriverFile.Basename).zip" -Verbose
+$DriverFile=Get-Childitem -Path $downloadfolder\IntelNICDriver | Where-Object Name -Like Wired_Driver*
+Expand-Archive -Path $DriverFile.FullName -DestinationPath $DownloadFolder\IntelNICDriver\Driver
+import-mdtdriver -path "DS001:\Out-of-Box Drivers" -SourcePath "C:\Users\LabAdmin\Downloads\IntelNICDriver\Driver" -Verbose
+
+#add PowerShell (winpe-scripting is removed as it's most likely needed in latestt 23H2 WinPE)
 $Properties=@()
 $Properties+=(Get-ItemPropertyValue DS001:\ -Name Boot.x64.FeaturePacks) -split (",")
-$FeaturesToAdd="winpe-netfx","winpe-powershell"
+$FeaturesToAdd="winpe-netfx","winpe-powershell"#,"winpe-scripting"
 foreach ($FeatureToAdd in $FeaturesToAdd){
     if ($properties -notcontains $FeatureToAdd){
         $Properties+=$FeatureToAdd
@@ -202,10 +296,10 @@ import-mdttasksequence -path "DS001:\Task Sequences" -Name "Azure Stack HCI Depl
 
 #endregion
 
-#region configure MDT run-as account
+#region configure MDT run-as account (to be able domain join. Not needed if you don't djoin machines)
 #create identity for MDT
 $DefaultOUPath=(Get-ADDomain).UsersContainer
-New-ADUser -Name MDTUser -AccountPassword  (ConvertTo-SecureString "LS1setup!" -AsPlainText -Force) -Enabled $True -Path $DefaultOUPath
+New-ADUser -Name MDTUser -AccountPassword  (ConvertTo-SecureString "LS1setup!" -AsPlainText -Force) -Enabled $True -Path $DefaultOUPath -PasswordNeverExpires $True
 
 #add FileShare permissions for MDT Account
 Invoke-Command -ComputerName $MDTServer -ScriptBlock {
@@ -270,8 +364,8 @@ winrm quickconfig -force #on client is winrm not configured
 Enable-WSManCredSSP -Role "Client" -DelegateComputer $MDTServer -Force
 Invoke-Command -ComputerName $MDTServer -ScriptBlock { Enable-WSManCredSSP Server -Force }
 
-$password = ConvertTo-SecureString "LS1setup!" -AsPlainText -Force
-$Credentials = New-Object System.Management.Automation.PSCredential ("$env:userdomain\LabAdmin", $password)
+$SecureStringPassword = ConvertTo-SecureString $CredSSPPassword -AsPlainText -Force
+$Credentials = New-Object System.Management.Automation.PSCredential ($CredSSPUserName, $SecureStringPassword)
 
 #Configure WDS
 Invoke-Command -ComputerName $MDTServer -Credential $Credentials -Authentication Credssp -ScriptBlock {
@@ -300,6 +394,7 @@ Invoke-Command -ComputerName $MDTServer -ScriptBlock {Disable-WSManCredSSP Serve
 Invoke-Command -ComputerName $MDTServer -ScriptBlock {
     Wdsutil /Set-TransportServer /EnableTftpVariableWindowExtension:No
 }
+
 #endregion
 
 #region configure MDT Monitoring
@@ -581,6 +676,7 @@ $text = [IO.File]::ReadAllText($CustomSettingsFile) -replace "`n", "`r`n"
 
 #region configure SQL to be able to access it remotely using MDTUser account(NamedPipes) or create dedicated SQL user (TCPIP)
 #Add permissions for MDT account to sql database
+#note: added -TrustServerCertificate as I saw an error since  05/2023 when invoke-sqlcmd ran. "The certificate chain was issued by an authority that is not trusted..."
 Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
 Install-Module -Name sqlserver -AllowClobber -Force
 if ((Get-ExecutionPolicy) -eq "Restricted"){
@@ -603,7 +699,7 @@ ALTER ROLE [db_datareader] ADD MEMBER [$env:userdomain\mdtuser]
 GO
 
 "@
-Invoke-Sqlcmd -ServerInstance $MDTServer\sqlexpress -Database MDTDB -Query $sqlscript
+Invoke-Sqlcmd -ServerInstance $MDTServer\sqlexpress -Database MDTDB -Query $sqlscript -TrustServerCertificate
 
 }elseif($Connection -eq "TCPIP"){
 #TCP (add user and change authentication mode to be able to use both SQL and Windows Auth
@@ -625,10 +721,12 @@ GO
 
 "@
 #TCP
-Invoke-Sqlcmd -ServerInstance "tcp:$MDTServer" -Database MDTDB -Query $sqlscript
+Invoke-Sqlcmd -ServerInstance "tcp:$MDTServer" -Database MDTDB -Query $sqlscript -TrustServerCertificate
 #restart service to apply mixed auth mode
 Invoke-Command -ComputerName $MDTServer -scriptblock {
     Restart-Service 'MSSQL$SQLEXPRESS'
 }
 }
 #endregion
+
+#region Final touch

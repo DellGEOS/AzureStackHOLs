@@ -3,21 +3,14 @@
 <!-- TOC -->
 
 - [Testing Azure Stack HCI Performance with VMFleet](#testing-azure-stack-hci-performance-with-vmfleet)
-    - [About the lab](#about-the-lab)
     - [Prerequsites](#prerequsites)
-    - [Task 01 - Create vmfleet image](#task-01---create-vmfleet-image)
+    - [Task 01 - Create Windows Server 2022 Core VHD](#task-01---create-windows-server-2022-core-vhd)
+    - [Task 02 - Create vmfleet image](#task-02---create-vmfleet-image)
     - [Task 02 - Configure VMFleet prerequsites](#task-02---configure-vmfleet-prerequsites)
     - [Task 03 - Deploy VMFleet and measure performance](#task-03---deploy-vmfleet-and-measure-performance)
     - [Task 04 - Cleanup VMFleet](#task-04---cleanup-vmfleet)
 
 <!-- /TOC -->
-
-## About the lab
-
-In this lab you will learn about how to test performance of Azure Stack HCI cluster with VMFleet 2.045
-
-The lab is based on [AzSHCI and VMFleet](https://github.com/microsoft/MSLab/tree/dev/Scenarios/AzSHCI%20and%20VMFleet) MSLab scenario.
-
 ## Prerequsites
 
 The main prerequisite is to have Azure Stack HCI cluster where you can deploy VMFleet.

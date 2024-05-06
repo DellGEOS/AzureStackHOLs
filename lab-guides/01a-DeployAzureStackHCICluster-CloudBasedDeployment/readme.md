@@ -21,6 +21,10 @@ In this lab you will deploy 2 node Azure Stack HCI cluster using [cloud deployme
 
 The lab is based on [AzSHCI and Cloud Based Deployment](https://github.com/microsoft/MSLab/tree/master/Scenarios/AzSHCI%20and%20Cloud%20Based%20Deployment) MSLab scenario.
 
+You can also deploy physical machines with [MDT](../../admin-guides/03-DeployPhysicalServersWithMSLab/readme.md). In this guide you will also see notes for physical environment.
+
+You can deploy physical machines with simple click-next-next from ISO. Make sure correct OS disk is selected and if DHCP is not available, configure an IP address and rename computers.
+
 > it is important to understand, that Cloud Deployment is not yet supported from any OEM. If you want deploy physical machines, it works well. However consider disabling Bitlocker for OS (or dont forget to suspend bitlocker before reboot after BIOS update) and disabling WDAC (wdac policy is distributed as part of Solution Builder Extension, and is not yet available)
 
 > to this date, the only way to deploy supported Azure Stack HCI 23H2 is to use Dell APEX Cloud Platform for Microsoft Azure
@@ -164,7 +168,32 @@ $Location="eastus"
  
 ```
 
-## Task03 - Prepare Azure Stack HCI nodes for Cloud Deployment
+## Task03 - Test Connectivity to Azure Stack HCI Nodes
+
+**Step 1** Test name resulution works with simple ping
+
+> If name resolution does not work, simply add IPs to hosts file  you can even use [Host File Editor](https://learn.microsoft.com/en-us/windows/powertoys/hosts-file-editor)
+
+![](./media/powershell010.png)
+
+Notice, that host is not replying. That's normal as Windows Firewall does not allow ping. Important is that Name is translated into IP Address.
+
+**Step 2** Test if WINRM works (for PowerShell remoting)
+
+![](./media/powershell011.png)
+
+> If WINRM fails and if your management is in different subnet, Windows Firewall is by default configured to accept connections on localsubnet only
+
+![](./media/powershell012.png)
+
+> you can modify it by running following code on every node (any, or just some IP address/range)
+
+```Powershell
+Get-NetFirewallRule -Name WINRM-HTTP-In-TCP-PUBLIC | Get-NetFirewallAddressFilter | Set-NetFirewallAddressFilter -RemoteAddress Any
+ 
+```
+
+## Task04 - Prepare Azure Stack HCI nodes for Cloud Deployment
 
 This task will install Arc agent, Arc extensions and will set RBAC roles to ARC Objects. It will also install Environmental checker, so cloud deployment will be able to kick off validation
 
@@ -193,13 +222,28 @@ Set-Item WSMan:\localhost\Client\TrustedHosts -Value $($TrustedHosts -join ',') 
  
 ```
 
+**Step 1** Wipe existing data on Data disks (applicable to physical hardware only as MSLab deploys clean disks).
+
+> If Disks are not wiped (contains spaces), validation will fail in "Azure Stack HCI Hardware" step.
+
+```PowerShell
+Invoke-Command -ComputerName $Servers -ScriptBlock {
+    $disks=Get-Disk | Where-Object IsBoot -eq $false
+    $disks | Set-Disk -IsReadOnly $false
+    $disks | Set-Disk -IsOffline $false
+    $disks | Clear-Disk -RemoveData -RemoveOEM -Confirm:0
+    $disks | get-disk | Set-Disk -IsOffline $true
+} -Credential $Credentials
+ 
+```
+
 **Step 2** Install features and cumulative updates
 
 > In deployment guide was mentioned, that Hyper-V should be installed and also ICMP should be enabled. We will enable ICMP by simply installing failover clustering role (that would be installed later anyway). It will automatically enable all Cluster firewall rules, that will also allow ICMP firewall rule.
 
 > Below code is using virtual account to kick off deployment of updates via COM. With virtual account it will be ran under with local system account instead of user account. If I would use user account remotely, it would fail.
 
-> Cumulative updates are optional
+> Cumulative updates are optional, but highly recommended. I saw some issues when enabling s2d.
 
 ```PowerShell
 Invoke-Command -ComputerName $servers -ScriptBlock {
@@ -243,7 +287,64 @@ Invoke-Command -ComputerName $servers -ScriptBlock {
  
 ```
 
-**Step 3** Restart servers to finish Features and Cumulative Updates installation
+**Step 3** Install Dell Drivers
+
+```PowerShell
+$DSUDownloadFolder="$env:USERPROFILE\Downloads\DSU"
+
+#Download DSU
+#https://github.com/DellProSupportGse/Tools/blob/main/DART.ps1
+#download latest DSU to Downloads
+$LatestDSU="https://dl.dell.com/FOLDER10889507M/1/Systems-Management_Application_RPW7K_WN64_2.0.2.3_A00.EXE"
+if (-not (Test-Path $DSUDownloadFolder -ErrorAction Ignore)){New-Item -Path $DSUDownloadFolder -ItemType Directory}
+Start-BitsTransfer -Source $LatestDSU -Destination $DSUDownloadFolder\DSU.exe
+
+#upload DSU to servers
+$Sessions=New-PSSession -ComputerName $Servers -Credential $Credentials
+Invoke-Command -Session $Sessions -ScriptBlock {
+    if (-not (Test-Path $using:DSUDownloadFolder -ErrorAction Ignore)){New-Item -Path $using:DSUDownloadFolder -ItemType Directory}
+}
+foreach ($Session in $Sessions){
+    Copy-Item -Path "$DSUDownloadFolder\DSU.exe" -Destination "$DSUDownloadFolder" -ToSession $Session -Force -Recurse
+}
+
+#install DSU
+Invoke-Command -Session $Sessions -ScriptBlock {
+    Start-Process -FilePath "$using:DSUDownloadFolder\DSU.exe" -ArgumentList "/silent" -Wait 
+}
+
+#Check compliance
+Invoke-Command -Session $Sessions -ScriptBlock {
+    & "C:\Program Files\Dell\DELL System Update\DSU.exe" --compliance --output-format="json" --output="$using:DSUDownloadFolder\Compliance.json"
+}
+
+#collect results
+$Compliance=@()
+foreach ($Session in $Sessions){
+    $json=Invoke-Command -Session $Session -ScriptBlock {Get-Content "$using:DSUDownloadFolder\Compliance.json"}
+    $object = $json | ConvertFrom-Json 
+    $components=$object.SystemUpdateCompliance.UpdateableComponent
+    $components | Add-Member -MemberType NoteProperty -Name "ClusterName" -Value $ClusterName
+    $components | Add-Member -MemberType NoteProperty -Name "ServerName" -Value $Session.ComputerName
+    $Compliance+=$Components
+}
+
+#display results
+$Compliance | Out-GridView
+
+#Or just choose what updates to install
+#$Compliance=$Compliance | Out-GridView -OutputMode Multiple
+
+#Install Dell updates https://www.dell.com/support/home/en-us/product-support/product/system-update/docs
+Invoke-Command -Session $Sessions -ScriptBlock {
+    $UpdateNames=(($using:Compliance | Where-Object {$_.ServerName -eq $env:computername -and $_.compliancestatus -eq $false}).PackageFilePath | Split-Path -Leaf) -join ","
+    & "C:\Program Files\Dell\DELL System Update\DSU.exe" --update-list="$UpdateNames" --apply-upgrades --apply-downgrades
+}
+$Sessions | Remove-PSSession
+ 
+```
+
+**Step 4** Restart servers to finish Features, Cumulative Updates and Drivers/Firmware installation
 
 ```PowerShell
 #restart servers to finish Installation
@@ -256,7 +357,7 @@ Foreach ($Server in $Servers){
  
 ```
 
-**Step 4** Install PowerShell modules on nodes
+**Step 5** Install PowerShell modules on nodes
 
 > To push ARC agent, new PowerShell module AzSHCI.ArcInstaller is required. Az.Resources and Az.Accounts modules are then used by arcinstaller configure RBAC on azure resources.
 
@@ -283,7 +384,7 @@ Invoke-Command -ComputerName $Servers -ScriptBlock {
  
 ```
 
-**Step 5** Make sure resource providers are registered
+**Step 6** Make sure resource providers are registered
 
 ```PowerShell
 Register-AzResourceProvider -ProviderNamespace "Microsoft.HybridCompute"
@@ -293,7 +394,7 @@ Register-AzResourceProvider -ProviderNamespace "Microsoft.AzureStackHCI"
  
 ```
 
-**Step 6** Deploy ARC agent with Invoke-AzStackHCIarcInitialization
+**Step 7** Deploy ARC agent with Invoke-AzStackHCIarcInitialization
 
 ```PowerShell
 #deploy ARC Agent
@@ -325,10 +426,9 @@ Register-AzResourceProvider -ProviderNamespace "Microsoft.AzureStackHCI"
  
 ```
 
-
 **Step 2** Configure NTP Server
 
-First you need to disable Timesync from Hyper-V. Run following command on Hyper-V Host!
+First you need to disable Timesync from Hyper-V. Run following command on Hyper-V Host! (applies to nested environment only)
 
 ```PowerShell
 Get-VM *ASNode* | Disable-VMIntegrationService -Name "Time Synchronization"
@@ -358,7 +458,7 @@ Invoke-Command -ComputerName $servers -ScriptBlock {
 **Step 3** Configure current user to be Key Vault Administrator on ASClus01 resource group
 
 ```PowerShell
-#add key vault admin of current user to Resource Group
+#add key vault admin of current user to Resource Group (It can be also done in Deploy Azure Stack HCI wizard)
     $objectId = (Get-AzADUser -SignedIn).Id
     New-AzRoleAssignment -ObjectId $ObjectId -ResourceGroupName $ResourceGroupName -RoleDefinitionName "Key Vault Administrator"
  

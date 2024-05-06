@@ -265,7 +265,7 @@
         #Install Dell updates https://www.dell.com/support/home/en-us/product-support/product/system-update/docs
         Invoke-Command -ComputerName $servers -ScriptBlock {
             $UpdateNames=(($using:Compliance | Where-Object {$_.ServerName -eq $env:computername -and $_.compliancestatus -eq $false}).PackageFilePath | Split-Path -Leaf) -join ","
-            & "C:\Program Files\Dell\DELL System Update\DSU.exe" --update-list="$using:UpdateNames" --apply-upgrades --apply-downgrades
+            & "C:\Program Files\Dell\DELL System Update\DSU.exe" --update-list="$UpdateNames" --apply-upgrades --apply-downgrades
         }
     }
 #endregion

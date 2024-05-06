@@ -13,61 +13,45 @@
 #endregion
 
 #region create DHCP reservation for machines
-    #Create DHCP reservations for Hyper-V hosts
-        #Add DHCP Reservations
-        foreach ($HVHost in $HVHosts){
-            if (!(Get-DhcpServerv4Reservation -ErrorAction SilentlyContinue -ComputerName $DHCPServer -ScopeId $ScopeID -ClientId ($HVHost.MACAddress).Replace(":","") | Where-Object IPAddress -eq $HVHost.IPAddress)){
-                Add-DhcpServerv4Reservation -ComputerName $DHCPServer -ScopeId $ScopeID -IPAddress $HVHost.IPAddress -ClientId ($HVHost.MACAddress).Replace(":","")
-            }
-        }
+#Create DHCP reservations for Hyper-V hosts
+    #Add DHCP Reservations
+    foreach ($HVHost in $HVHosts){
+        Add-DhcpServerv4Reservation -ComputerName $DHCPServer -ScopeId $ScopeID -IPAddress $HVHost.IPAddress -ClientId ($HVHost.MACAddress).Replace(":","") -ErrorAction Ignore
+    }
 
-    #configure NTP server in DHCP (might be useful if Servers have issues with time)
-        if (!(get-DhcpServerv4OptionValue -ComputerName $DHCPServer -ScopeId $ScopeID -OptionId 042 -ErrorAction SilentlyContinue)){
-            Set-DhcpServerv4OptionValue -ComputerName $DHCPServer -ScopeId $ScopeID -OptionId 042 -Value "10.0.0.1"
-        }
+#configure NTP server in DHCP (might be useful if Servers have issues with time)
+    Set-DhcpServerv4OptionValue -ComputerName $DHCPServer -ScopeId $ScopeID -OptionId 042 -Value "10.0.0.1" -ErrorAction Ignore
+
 #endregion
 
-#region add deploy info to AD Object and MDT Database
-    #download and unzip mdtdb (blog available in web.archive only https://web.archive.org/web/20190421025144/https://blogs.technet.microsoft.com/mniehaus/2009/05/14/manipulating-the-microsoft-deployment-toolkit-database-using-powershell/)
-    #Start-BitsTransfer -Source https://msdnshared.blob.core.windows.net/media/TNBlogsFS/prod.evol.blogs.technet.com/telligent.evolution.components.attachments/01/5209/00/00/03/24/15/04/MDTDB.zip -Destination $env:USERPROFILE\Downloads\MDTDB.zip
-    Start-BitsTransfer -Source https://github.com/microsoft/MSLab/raw/master/Scenarios/AzSHCI%20and%20MDT/MDTDB.zip -Destination $env:USERPROFILE\Downloads\MDTDB.zip
+#region add deploy info to MDT Database
+#download and unzip mdtdb (blog available in web.archive only https://web.archive.org/web/20190421025144/https://blogs.technet.microsoft.com/mniehaus/2009/05/14/manipulating-the-microsoft-deployment-toolkit-database-using-powershell/)
+#Start-BitsTransfer -Source https://msdnshared.blob.core.windows.net/media/TNBlogsFS/prod.evol.blogs.technet.com/telligent.evolution.components.attachments/01/5209/00/00/03/24/15/04/MDTDB.zip -Destination $env:USERPROFILE\Downloads\MDTDB.zip
+Start-BitsTransfer -Source https://github.com/microsoft/MSLab/raw/master/Scenarios/AzSHCI%20and%20MDT/MDTDB.zip -Destination $env:USERPROFILE\Downloads\MDTDB.zip
 
-    Expand-Archive -Path $env:USERPROFILE\Downloads\MDTDB.zip -DestinationPath $env:USERPROFILE\Downloads\MDTDB\
-    if ((Get-ExecutionPolicy) -eq "Restricted"){
-        Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
+Expand-Archive -Path $env:USERPROFILE\Downloads\MDTDB.zip -DestinationPath $env:USERPROFILE\Downloads\MDTDB\
+if ((Get-ExecutionPolicy) -eq "Restricted"){
+    Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
+}
+Import-Module $env:USERPROFILE\Downloads\MDTDB\MDTDB.psm1
+#make sure DS is connected
+    if (-not(get-module MicrosoftDeploymentToolkit)){
+        Import-Module "C:\Program Files\Microsoft Deployment Toolkit\bin\MicrosoftDeploymentToolkit.psd1"
     }
-    Import-Module $env:USERPROFILE\Downloads\MDTDB\MDTDB.psm1
-    #make sure DS is connected
-        if (-not(get-module MicrosoftDeploymentToolkit)){
-            Import-Module "C:\Program Files\Microsoft Deployment Toolkit\bin\MicrosoftDeploymentToolkit.psd1"
-        }
-        if (-not(Get-PSDrive -Name ds001 -ErrorAction Ignore)){
-            New-PSDrive -Name "DS001" -PSProvider "MDTProvider" -Root "\\$MDTServer\DeploymentShare$" -Description "MDT Deployment Share" -NetworkPath "\\$MDTServer\DeploymentShare$" -Verbose | add-MDTPersistentDrive -Verbose
-        }
-    #Connect to DB
-        #Connect-MDTDatabase -database mdtdb -sqlServer $MDTServer -instance SQLExpress
-        Connect-MDTDatabase -drivePath "DS001:\"
-
-
-    #add hosts to MDT DB
-    foreach ($HVHost in $HVHosts){
-        if (-not(Get-AdComputer  -Filter "Name -eq `"$($HVHost.ComputerName)`"")){
-            New-ADComputer -Name $hvhost.ComputerName
-        }
-        #add to MDT DB
-        if (-not (Get-MDTComputer -macAddress $HVHost.MACAddress)){
-            New-MDTComputer -macAddress $HVHost.MACAddress -description $HVHost.ComputerName -uuid $HVHost.GUID -settings @{ 
-                ComputerName        = $HVHost.ComputerName 
-                OSDComputerName     = $HVHost.ComputerName 
-                #SkipBDDWelcome      = 'Yes' 
-            }
-        }
-        Get-MDTComputer -macAddress $HVHost.MACAddress | Set-MDTComputerRole -roles JoinDomain,AZSHCI
+    if (-not(Get-PSDrive -Name ds001 -ErrorAction Ignore)){
+        New-PSDrive -Name "DS001" -PSProvider "MDTProvider" -Root "\\$MDTServer\DeploymentShare$" -Description "MDT Deployment Share" -NetworkPath "\\$MDTServer\DeploymentShare$" -Verbose | add-MDTPersistentDrive -Verbose
     }
+#Connect to DB
+    #Connect-MDTDatabase -database mdtdb -sqlServer $MDTServer -instance SQLExpress
+    Connect-MDTDatabase -drivePath "DS001:\"
 
+
+#add hosts to MDT DB
     #Configure MDT DB Roles
         if (-not (Get-MDTRole -name azshci)){
             New-MDTRole -name AZSHCI -settings @{
+                SkipComputerName    = 'YES'
+                SkipDomainMembership= 'YES'
                 SkipTaskSequence    = 'YES'
                 SkipWizard          = 'YES'
                 SkipSummary         = 'YES'
@@ -80,21 +64,36 @@
 
         if (-not (Get-MDTRole -name JoinDomain)){
             New-MDTRole -name JoinDomain -settings @{
-                SkipComputerName    ='YES'
-                SkipDomainMembership='YES'
-                JoinDomain          = $env:USERDNSDomain
+                JoinDomain          = $env:USERDNSDomain 
                 DomainAdmin         ='MDTUser'
                 DomainAdminDomain   = $env:userdomain
                 DomainAdminPassword ='LS1setup!'
             }
         }
 
-    #allow machines to boot from PXE from DC by adding info into AD Object
     foreach ($HVHost in $HVHosts){
-        [guid]$guid=$HVHost.GUID
-        Set-ADComputer -identity $hvhost.ComputerName -replace @{netbootGUID = $guid}
-        #Set-ADComputer -identity $hvhost.ComputerName -replace @{netbootMachineFilePath = "DC"}
+        #add to MDT DB
+        if (-not (Get-MDTComputer -macAddress $HVHost.MACAddress)){
+            New-MDTComputer -macAddress $HVHost.MACAddress -description $HVHost.ComputerName -uuid $HVHost.GUID -settings @{ 
+                ComputerName        = $HVHost.ComputerName 
+                OSDComputerName     = $HVHost.ComputerName 
+                #SkipBDDWelcome      = 'Yes' 
+            }
+        }
+        Get-MDTComputer -macAddress $HVHost.MACAddress | Set-MDTComputerRole -roles "AZSHCI" #,JoinDomain
     }
+
+#allow machines to boot from PXE from DC by adding info into AD Object (skipping since in 23H2 we need to skip domajin join)
+<#
+foreach ($HVHost in $HVHosts){
+    if (-not(Get-AdComputer  -Filter "Name -eq `"$($HVHost.ComputerName)`"")){
+        New-ADComputer -Name $hvhost.ComputerName
+    }
+    [guid]$guid=$HVHost.GUID
+    Set-ADComputer -identity $hvhost.ComputerName -replace @{netbootGUID = $guid}
+    #Set-ADComputer -identity $hvhost.ComputerName -replace @{netbootMachineFilePath = "DC"}
+}
+#>
 
 #endregion
 
@@ -104,11 +103,11 @@ $PSScriptName="OSDDiskIndex.ps1"
 $PSScriptContent=@'
 $Disks=Get-CimInstance win32_DiskDrive
 if ($Disks.model -contains "DELLBOSS VD"){
-    #exact model for Dell AX node (DELLBOSS VD)
-    $TSenv:OSDDiskIndex=($Disks | Where-Object Model -eq "DELLBOSS VD").Index
+#exact model for Dell AX/MC node (DELLBOSS VD)
+$TSenv:OSDDiskIndex=($Disks | Where-Object Model -eq "DELLBOSS VD").Index
 }else{
-    #or just smallest disk
-    $TSenv:OSDDiskIndex=($Disks | Where-Object MediaType -eq "Fixed hard disk media" | Sort-Object Size | Select-Object -First 1).Index
+#or just smallest disk
+$TSenv:OSDDiskIndex=($Disks | Where-Object MediaType -eq "Fixed hard disk media" | Sort-Object Size | Select-Object -First 1).Index
 }
 <# In case you need PowerShell and pause Task Sequence you can use this code:
 #source: http://wiki.wladik.net/windows/mdt/powershell-scripting
@@ -120,28 +119,103 @@ Start PowerShell
 #>
 '@
 
-    #update Tasksequence
-    $TS=Invoke-Command -ComputerName $MDTServer -ScriptBlock {Get-Content -Path $using:DeploymentShareLocation\Control\$using:TaskSequenceID\ts.xml}
-    $TextToSearch='    <group name="New Computer only" disable="false" continueOnError="false" description="" expand="false">'
-    $PoshScript=@"
-    <step type="BDD_RunPowerShellAction" name="Run PowerShell Script" description="" disable="false" continueOnError="false" successCodeList="0 3010">
-      <defaultVarList>
-        <variable name="ScriptName" property="ScriptName">$PSScriptName</variable>
-        <variable name="Parameters" property="Parameters"></variable>
-        <variable name="PackageID" property="PackageID"></variable>
-      </defaultVarList>
-      <action>cscript.exe "%SCRIPTROOT%\ZTIPowerShell.wsf</action>
-    </step>
+#update Tasksequence
+$TS=Invoke-Command -ComputerName $MDTServer -ScriptBlock {Get-Content -Path $using:DeploymentShareLocation\Control\$using:TaskSequenceID\ts.xml}
+$TextToSearch='    <group name="New Computer only" disable="false" continueOnError="false" description="" expand="false">'
+$PoshScript=@"
+<step type="BDD_RunPowerShellAction" name="Run PowerShell Script" description="" disable="false" continueOnError="false" successCodeList="0 3010">
+  <defaultVarList>
+    <variable name="ScriptName" property="ScriptName">$PSScriptName</variable>
+    <variable name="Parameters" property="Parameters"></variable>
+    <variable name="PackageID" property="PackageID"></variable>
+  </defaultVarList>
+  <action>cscript.exe "%SCRIPTROOT%\ZTIPowerShell.wsf</action>
+</step>
 $TextToSearch
 "@
-    $NewTS=$TS.replace($TextToSearch,$PoshScript)
-    Invoke-Command -ComputerName $MDTServer -ScriptBlock {Set-Content -Path $using:DeploymentShareLocation\Control\$using:TaskSequenceID\ts.xml -Value $using:NewTS}
-    #insert script
-    Invoke-Command -ComputerName $MDTServer -ScriptBlock {Set-Content -Path $using:DeploymentShareLocation\Scripts\$using:PSScriptName -Value $using:PSScriptContent}
+$NewTS=$TS.replace($TextToSearch,$PoshScript)
+Invoke-Command -ComputerName $MDTServer -ScriptBlock {Set-Content -Path $using:DeploymentShareLocation\Control\$using:TaskSequenceID\ts.xml -Value $using:NewTS}
+#insert script
+Invoke-Command -ComputerName $MDTServer -ScriptBlock {Set-Content -Path $using:DeploymentShareLocation\Scripts\$using:PSScriptName -Value $using:PSScriptContent}
 
 #endregion
 
 #region update task sequence with drivers
+
+#Download DSU
+#https://github.com/DellProSupportGse/Tools/blob/main/DART.ps1
+
+#download latest DSU to separate folder (link is in latest OMIMSWAC user guide https://www.dell.com/support/home/en-us/product-support/product/openmanage-integration-microsoft-windows-admin-center/docs)
+$LatestDSU="https://downloads.dell.com/omimswac/dsu/Systems-Management_Application_GG4YM_WN64_2.0.2.2_A00.EXE"
+$Folder="$env:USERPROFILE\Downloads\DSU"
+if (-not (Test-Path $Folder)){New-Item -Path $Folder -ItemType Directory}
+Start-BitsTransfer -Source $LatestDSU -Destination $Folder\DSU.exe
+
+#add DSU as application to MDT
+Import-Module "C:\Program Files\Microsoft Deployment Toolkit\bin\MicrosoftDeploymentToolkit.psd1"
+if (-not(Get-PSDrive -Name ds001 -ErrorAction Ignore)){
+    New-PSDrive -Name "DS001" -PSProvider "MDTProvider" -Root "\\$MDTServer\DeploymentShare$" -Description "MDT Deployment Share" -NetworkPath "\\$MDTServer\DeploymentShare$" -Verbose | add-MDTPersistentDrive -Verbose
+}
+$AppName="Dell DSU 2.0.2.3"
+Import-MDTApplication -path "DS001:\Applications" -enable "True" -Name $AppName -ShortName "DSU" -Version $LatestDSU.Version -Publisher "Dell" -Language "" -CommandLine "DSU.exe /silent" -WorkingDirectory ".\Applications\$AppName" -ApplicationSourcePath $Folder -DestinationFolder $AppName -Verbose
+#grap package ID for role config
+$DSUID=(Get-ChildItem -Path DS001:\Applications | Where-Object Name -eq $AppName).GUID
+
+#add install script
+$Folder="$env:USERPROFILE\Downloads\DSUScript"
+if (-not (Test-Path $Folder)){New-Item -Path $Folder -ItemType Directory}
+
+#add package to MDT
+$AppName="Dell DSU Install Drivers"
+$Commandline="C:\Program Files\Dell\DELL System Update\DSU.exe --apply-upgrades --apply-downgrades --non-interactive"
+Import-MDTApplication -path "DS001:\Applications" -enable "True" -Name $AppName -ShortName "DellDSUDriversInstall" -Version "1.0" -Publisher "Dell" -Language "" -CommandLine $Commandline -WorkingDirectory ".\Applications\$AppName" -ApplicationSourcePath $Folder -DestinationFolder $AppName -Verbose
+#configure app to reboot after run
+Set-ItemProperty -Path DS001:\Applications\$AppName -Name Reboot -Value "True"
+#configure dependency on DSU
+$guids=@()
+$guids+=$DSUID
+Set-ItemProperty -Path DS001:\Applications\$AppName -Name Dependency -Value $guids
+#grap package ID for role config
+$DSUInstallDriversID=(Get-ChildItem -Path DS001:\Applications | Where-Object Name -eq $AppName).GUID
+
+#Create Role
+$RoleName="DellDrivers"
+if (-not (Get-MDTRole -name $RoleName)){
+    New-MDTRole -name $RoleName -settings @{
+        OSInstall    ='YES'
+    }
+}
+#Add apps to role
+$ID=(get-mdtrole -name $RoleName).ID
+Set-MDTRoleApplication -id $ID -applications $DSUID,$DSUInstallDriversID
+
+#add role that will install drivers to AX/MC computers
+    foreach ($HVHost in $HVHosts){
+        $MDTComputer=Get-MDTComputer -macAddress $HVHost.MACAddress
+        [array]$Roles=($MDTComputer | Get-MDTComputerRole).Role
+        $Roles+=$RoleName
+        #Get-MDTComputer -macAddress $HVHost.MACAddress | Set-MDTComputerRole -roles JoinDomain,AZSHCI
+        $MDTComputer | Set-MDTComputerRole -roles $Roles
+    }
+#download catalog drivers <TBD>
+<#
+#Create output folder
+$FolderName=$xml.manifest.version
+New-Item -ItemType Directory -Name $FolderName -Path "$env:UserProfile\Downloads" -ErrorAction Ignore
+New-Item -ItemType Directory -Name "RebootRequired" -Path "$env:UserProfile\Downloads\$FolderName" -ErrorAction Ignore
+New-Item -ItemType Directory -Name "RebootNotRequired" -Path "$env:UserProfile\Downloads\$FolderName" -ErrorAction Ignore
+#download files
+foreach ($item in $xml.manifest.softwarecomponent){
+    $filename=$($item.path.split("/")|Select-Object -Last 1)
+    if ($item.RebootRequired -eq "True"){
+        Start-BitsTransfer -Source "https://downloads.dell.com/$($item.path)" -Destination "$env:UserProfile\Downloads\$FolderName\RebootRequired\$filename" -DisplayName "Downloading $filename releasedate $($item.releaseDate)"
+    }else{
+        Start-BitsTransfer -Source "https://downloads.dell.com/$($item.path)" -Destination "$env:UserProfile\Downloads\$FolderName\RebootNotRequired\$filename" -DisplayName "Downloading $filename releasedate $($item.releaseDate)"
+    }
+}
+#>
+#endregion
+
 
 #Download DSU
 #https://github.com/DellProSupportGse/Tools/blob/main/DART.ps1
@@ -238,7 +312,7 @@ $TextToSearch
     #add role that will install drivers to AX computers
         foreach ($HVHost in $HVHosts){
             $MDTComputer=Get-MDTComputer -macAddress $HVHost.MACAddress
-            $Roles=($MDTComputer | Get-MDTComputerRole).Role
+            [array]$Roles=($MDTComputer | Get-MDTComputerRole).Role
             $Roles+=$RoleName
             #Get-MDTComputer -macAddress $HVHost.MACAddress | Set-MDTComputerRole -roles JoinDomain,AZSHCI
             $MDTComputer | Set-MDTComputerRole -roles $Roles

@@ -222,6 +222,21 @@ Set-Item WSMan:\localhost\Client\TrustedHosts -Value $($TrustedHosts -join ',') 
  
 ```
 
+**Step 1** Wipe existing data on Data disks (applicable to physical hardware only as MSLab deploys clean disks).
+
+> If Disks are not wiped (contains spaces), validation will fail in "Azure Stack HCI Hardware" step.
+
+```PowerShell
+Invoke-Command -ComputerName $Servers -ScriptBlock {
+    $disks=Get-Disk | Where-Object IsBoot -eq $false
+    $disks | Set-Disk -IsReadOnly $false
+    $disks | Set-Disk -IsOffline $false
+    $disks | Clear-Disk -RemoveData -RemoveOEM -Confirm:0
+    $disks | get-disk | Set-Disk -IsOffline $true
+} -Credential $Credentials
+ 
+```
+
 **Step 2** Install features and cumulative updates
 
 > In deployment guide was mentioned, that Hyper-V should be installed and also ICMP should be enabled. We will enable ICMP by simply installing failover clustering role (that would be installed later anyway). It will automatically enable all Cluster firewall rules, that will also allow ICMP firewall rule.
@@ -329,7 +344,7 @@ $Sessions | Remove-PSSession
  
 ```
 
-**Step 3** Restart servers to finish Features, Cumulative Updates and Drivers/Firmware installation
+**Step 4** Restart servers to finish Features, Cumulative Updates and Drivers/Firmware installation
 
 ```PowerShell
 #restart servers to finish Installation
@@ -342,7 +357,7 @@ Foreach ($Server in $Servers){
  
 ```
 
-**Step 4** Install PowerShell modules on nodes
+**Step 5** Install PowerShell modules on nodes
 
 > To push ARC agent, new PowerShell module AzSHCI.ArcInstaller is required. Az.Resources and Az.Accounts modules are then used by arcinstaller configure RBAC on azure resources.
 
@@ -369,7 +384,7 @@ Invoke-Command -ComputerName $Servers -ScriptBlock {
  
 ```
 
-**Step 5** Make sure resource providers are registered
+**Step 6** Make sure resource providers are registered
 
 ```PowerShell
 Register-AzResourceProvider -ProviderNamespace "Microsoft.HybridCompute"
@@ -379,7 +394,7 @@ Register-AzResourceProvider -ProviderNamespace "Microsoft.AzureStackHCI"
  
 ```
 
-**Step 6** Deploy ARC agent with Invoke-AzStackHCIarcInitialization
+**Step 7** Deploy ARC agent with Invoke-AzStackHCIarcInitialization
 
 ```PowerShell
 #deploy ARC Agent
@@ -443,7 +458,7 @@ Invoke-Command -ComputerName $servers -ScriptBlock {
 **Step 3** Configure current user to be Key Vault Administrator on ASClus01 resource group
 
 ```PowerShell
-#add key vault admin of current user to Resource Group
+#add key vault admin of current user to Resource Group (It can be also done in Deploy Azure Stack HCI wizard)
     $objectId = (Get-AzADUser -SignedIn).Id
     New-AzRoleAssignment -ObjectId $ObjectId -ResourceGroupName $ResourceGroupName -RoleDefinitionName "Key Vault Administrator"
  

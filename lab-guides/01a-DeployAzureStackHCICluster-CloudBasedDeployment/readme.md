@@ -129,6 +129,8 @@ Keep the PowerShell window open for the next task
 
 > You will be requested to enter code into the browser. I find this the most secure way to log in - as you can log in in another machine - your machine you trust.
 
+> Note: you might need to disable WAM https://learn.microsoft.com/en-us/powershell/azure/authenticate-interactive?view=azps-12.0.0#disable-wam as tenantID has to be specified by default (Update-AzConfig -EnableLoginByWam $false)
+
 ```PowerShell
 $ResourceGroupName="ASClus01-RG"
 $Location="eastus"
@@ -136,7 +138,7 @@ $Location="eastus"
 #login to azure
     #download Azure module
     if (!(Get-InstalledModule -Name az.accounts -ErrorAction Ignore)){
-        Install-Module -Name Az.Accounts -Force
+        Install-Module -Name Az.Accounts -Force 
     }
     if (-not (Get-AzContext)){
         Connect-AzAccount -UseDeviceAuthentication
@@ -157,8 +159,8 @@ $Location="eastus"
 
 ```PowerShell
 #install az resources module
-    if (!(Get-InstalledModule -Name "az.resources" -ErrorAction Ignore)){
-        Install-Module -Name "az.resources" -Force
+    if (!(Get-InstalledModule -Name az.resources -ErrorAction Ignore)){
+        Install-Module -Name az.resources -Force
     }
 
 #create resource group
@@ -361,6 +363,9 @@ Foreach ($Server in $Servers){
 
 > To push ARC agent, new PowerShell module AzSHCI.ArcInstaller is required. Az.Resources and Az.Accounts modules are then used by arcinstaller configure RBAC on azure resources.
 
+> note: ARC requires specific version of modules https://learn.microsoft.com/en-us/azure-stack/hci/deploy/deployment-arc-register-server-permissions?tabs=powershell#register-servers-with-azure-arc
+
+
 ```PowerShell
 #make sure nuget is installed on nodes
 Invoke-Command -ComputerName $Servers -ScriptBlock {
@@ -374,14 +379,19 @@ Invoke-Command -ComputerName $Servers -ScriptBlock {
 
 #make sure Az.Resources module is installed on nodes
 Invoke-Command -ComputerName $Servers -ScriptBlock {
-    Install-Module -Name Az.Resources -Force
+    Install-Module -Name Az.Resources -RequiredVersion 6.12.0 -Force
 } -Credential $Credentials
 
 #make sure az.accounts module is installed on nodes
 Invoke-Command -ComputerName $Servers -ScriptBlock {
-    Install-Module -Name az.accounts -Force
+    Install-Module -Name az.accounts -RequiredVersion 2.13.2 -Force
 } -Credential $Credentials
- 
+
+#make sure az.accounts module is installed on nodes
+Invoke-Command -ComputerName $Servers -ScriptBlock {
+    Install-Module -Name Az.ConnectedMachine -RequiredVersion 0.5.2 -Force
+} -Credential $Credentials
+
 ```
 
 **Step 6** Make sure resource providers are registered
@@ -504,6 +514,8 @@ Networking
     Network adapter 2:          Ethernet 2
     Network adapter 2 VLAN ID:  712 (default)
 
+    RDMA Protocol:              Disabled (in case you are running lab in VMs)
+
     Starting IP:                10.0.0.111
     ENding IP:                  10.0.0.116
     Subnet mask:                255.255.255.0
@@ -542,6 +554,10 @@ Tags:
 ![](./media/edge07.png)
 
 ![](./media/edge08.png)
+
+You also might need to disable RDMA as VM network adapters do not support RDMA
+
+![](./media/edge08.5.png)
 
 ![](./media/edge09.png)
 

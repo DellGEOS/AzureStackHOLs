@@ -1,0 +1,318 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "apiVersion": {
+            "defaultValue": "2023-08-01-preview",
+            "type": "String",
+            "metadata": "The api version for deploying a hci cluster"
+        },
+        "name": {
+            "defaultValue": "ASClus01",
+            "type": "String",
+            "metadata": "The name of the hci cluster"
+        },
+        "arcNodeResourceIds": {
+            "defaultValue": [
+                "/subscriptions/c9d71720-73a9-4d37-80b3-9f554562fa55/resourceGroups/ASClus01-RG/providers/Microsoft.HybridCompute/machines/ASNode1",
+                "/subscriptions/c9d71720-73a9-4d37-80b3-9f554562fa55/resourceGroups/ASClus01-RG/providers/Microsoft.HybridCompute/machines/ASNode2"
+            ],
+            "type": "Array",
+            "metadata": "The arc for server node Ids of the hci cluster"
+        },
+        "domainFqdn": {
+            "defaultValue": "corp.contoso.com",
+            "type": "String",
+            "metadata": "The domain name of the active directory"
+        },
+        "namingPrefix": {
+            "defaultValue": "HCI01",
+            "type": "String",
+            "metadata": "The computer name prefix"
+        },
+        "adouPath": {
+            "defaultValue": "OU=ASClus01,DC=Corp,DC=contoso,DC=com",
+            "type": "String",
+            "metadata": "The oU path"
+        },
+        "secretsLocation": {
+            "defaultValue": "https://ASClus01-hcikv23456.vault.azure.net",
+            "type": "String",
+            "metadata": "The key vault uri"
+        },
+        "securityLevel": {
+            "defaultValue": "Customized",
+            "type": "String",
+            "metadata": "The security level data for deploying a hci cluster"
+        },
+        "driftControlEnforced": {
+            "defaultValue": true,
+            "type": "Bool",
+            "metadata": "The security setting driftControlEnforced data for deploying a hci cluster"
+        },
+        "credentialGuardEnforced": {
+            "defaultValue": true,
+            "type": "Bool",
+            "metadata": "The security setting credentialGuardEnforced data for deploying a hci cluster"
+        },
+        "smbSigningEnforced": {
+            "defaultValue": true,
+            "type": "Bool",
+            "metadata": "The security setting smbSigningEnforced data for deploying a hci cluster"
+        },
+        "smbClusterEncryption": {
+            "defaultValue": false,
+            "type": "Bool",
+            "metadata": "The security setting smbClusterEncryption data for deploying a hci cluster"
+        },
+        "bitlockerBootVolume": {
+            "defaultValue": true,
+            "type": "Bool",
+            "metadata": "The security setting bitlockerBootVolume data for deploying a hci cluster"
+        },
+        "bitlockerDataVolumes": {
+            "defaultValue": false,
+            "type": "Bool",
+            "metadata": "The security setting bitlockerDataVolumes data for deploying a hci cluster"
+        },
+        "wdacEnforced": {
+            "defaultValue": true,
+            "type": "Bool",
+            "metadata": "The security setting wdacEnforced data for deploying a hci cluster"
+        },
+        "streamingDataClient": {
+            "defaultValue": true,
+            "type": "Bool",
+            "metadata": "The metrics data for deploying a hci cluster"
+        },
+        "euLocation": {
+            "defaultValue": true,
+            "type": "Bool",
+            "metadata": "The location data for deploying a hci cluster"
+        },
+        "episodicDataUpload": {
+            "defaultValue": true,
+            "type": "Bool",
+            "metadata": "The diagnostic data for deploying a hci cluster"
+        },
+        "clusterName": {
+            "defaultValue": "ASClus01",
+            "type": "String",
+            "metadata": "The name of the hci cluster"
+        },
+        "witnessType": {
+            "defaultValue": "Cloud",
+            "type": "String",
+            "metadata": "The witness type for the azure stack hci cluster"
+        },
+        "cloudAccountName": {
+            "defaultValue": "asclus01sa",
+            "type": "String",
+            "metadata": "The storage account for deploying a hci cluster"
+        },
+        "storageAccountEndpoint": {
+            "defaultValue": "core.windows.net",
+            "type": "String",
+            "metadata": "The storage account endpoint for deploying a hci cluster"
+        },
+        "configurationMode": {
+            "defaultValue": "Express",
+            "type": "String",
+            "metadata": "The volume type for deploying a hci cluster"
+        },
+        "subnetMask": {
+            "defaultValue": "255.255.255.0",
+            "type": "String",
+            "metadata": "The subnet mask for deploying a hci cluster"
+        },
+        "defaultGateway": {
+            "defaultValue": "10.0.0.1",
+            "type": "String",
+            "metadata": "The default gateway for deploying a hci cluster"
+        },
+        "startingIPAddress": {
+            "defaultValue": "10.0.0.100",
+            "type": "String",
+            "metadata": "The starting ip address for deploying a hci cluster"
+        },
+        "endingIPAddress": {
+            "defaultValue": "10.0.0.105",
+            "type": "String",
+            "metadata": "The ending ip address for deploying a hci cluster"
+        },
+        "dnsServers": {
+            "defaultValue": [
+                "10.0.0.1"
+            ],
+            "type": "Array",
+            "metadata": "The dns servers for deploying a hci cluster"
+        },
+        "physicalNodesSettings": {
+            "defaultValue": [
+                {
+                    "name": "ASNode1",
+                    "ipv4Address": "10.0.0.11"
+                },
+                {
+                    "name": "ASNode2",
+                    "ipv4Address": "10.0.0.14"
+                }
+            ],
+            "type": "Array",
+            "metadata": "The physical nodes settings for deploying a hci cluster"
+        },
+        "networkingType": {
+            "defaultValue": "switchedMultiServerDeployment",
+            "type": "String",
+            "metadata": "The networking type for deploying a hci cluster"
+        },
+        "networkingPattern": {
+            "defaultValue": "hyperConverged",
+            "type": "String",
+            "metadata": "The networking pattern for deploying a hci cluster"
+        },
+        "intentList": {
+            "defaultValue": [
+                {
+                    "name": "Compute_Management_Storage",
+                    "trafficType": [
+                        "Compute",
+                        "Management",
+                        "Storage"
+                    ],
+                    "adapter": [
+                        "Ethernet",
+                        "Ethernet 2"
+                    ],
+                    "overrideVirtualSwitchConfiguration": false,
+                    "virtualSwitchConfigurationOverrides": {
+                        "enableIov": "",
+                        "loadBalancingAlgorithm": ""
+                    },
+                    "overrideQosPolicy": false,
+                    "qosPolicyOverrides": {
+                        "priorityValue8021Action_Cluster": "7",
+                        "priorityValue8021Action_SMB": "3",
+                        "bandwidthPercentage_SMB": "50"
+                    },
+                    "overrideAdapterProperty": true,
+                    "adapterPropertyOverrides": {
+                        "jumboPacket": "9014",
+                        "networkDirect": "Disabled",
+                        "networkDirectTechnology": ""
+                    }
+                }
+            ],
+            "type": "Array",
+            "metadata": "The intent list for deploying a hci cluster"
+        },
+        "storageNetworkList": {
+            "defaultValue": [
+                {
+                    "name": "StorageNetwork1",
+                    "networkAdapterName": "Ethernet",
+                    "vlanId": "711"
+                },
+                {
+                    "name": "StorageNetwork2",
+                    "networkAdapterName": "Ethernet 2",
+                    "vlanId": "712"
+                }
+            ],
+            "type": "Array",
+            "metadata": "The storage network list for deploying a hci cluster"
+        },
+        "storageConnectivitySwitchless": {
+            "defaultValue": false,
+            "type": "Bool",
+            "metadata": "The storage connectivity switchless value for deploying a hci cluster"
+        },
+        "customLocation": {
+            "defaultValue": "ASClus01",
+            "type": "String",
+            "metadata": "The custom location for deploying a hci cluster"
+        }
+    },
+    "resources": [
+        {
+            "type": "microsoft.azurestackhci/clusters/deploymentSettings",
+            "apiVersion": "[parameters('apiVersion')]",
+            "name": "[format('{0}/default', parameters('name'))]",
+            "properties": {
+                "arcNodeResourceIds": "[parameters('arcNodeResourceIds')]",
+                "deploymentMode": "Deploy",
+                "deploymentConfiguration": {
+                    "version": "10.0.0.0",
+                    "scaleUnits": [
+                        {
+                            "deploymentData": {
+                                "securitySettings": {
+                                    "hvciProtection": true,
+                                    "drtmProtection": true,
+                                    "driftControlEnforced": "[parameters('driftControlEnforced')]",
+                                    "credentialGuardEnforced": "[parameters('credentialGuardEnforced')]",
+                                    "smbSigningEnforced": "[parameters('smbSigningEnforced')]",
+                                    "smbClusterEncryption": "[parameters('smbClusterEncryption')]",
+                                    "sideChannelMitigationEnforced": true,
+                                    "bitlockerBootVolume": "[parameters('bitlockerBootVolume')]",
+                                    "bitlockerDataVolumes": "[parameters('bitlockerDataVolumes')]",
+                                    "wdacEnforced": "[parameters('wdacEnforced')]"
+                                },
+                                "observability": {
+                                    "streamingDataClient": "[parameters('streamingDataClient')]",
+                                    "euLocation": "[parameters('euLocation')]",
+                                    "episodicDataUpload": "[parameters('episodicDataUpload')]"
+                                },
+                                "cluster": {
+                                    "name": "[parameters('clusterName')]",
+                                    "witnessType": "[parameters('witnessType')]",
+                                    "witnessPath": "",
+                                    "cloudAccountName": "[parameters('cloudAccountName')]",
+                                    "azureServiceEndpoint": "[parameters('storageAccountEndpoint')]"
+                                },
+                                "storage": {
+                                    "configurationMode": "[parameters('configurationMode')]"
+                                },
+                                "namingPrefix": "[parameters('namingPrefix')]",
+                                "domainFqdn": "[parameters('domainFqdn')]",
+                                "infrastructureNetwork": [
+                                    {
+                                        "subnetMask": "[parameters('subnetMask')]",
+                                        "gateway": "[parameters('defaultGateway')]",
+                                        "ipPools": [
+                                            {
+                                                "startingAddress": "[parameters('startingIPAddress')]",
+                                                "endingAddress": "[parameters('endingIPAddress')]"
+                                            }
+                                        ],
+                                        "dnsServers": "[parameters('dnsServers')]"
+                                    }
+                                ],
+                                "physicalNodes": [
+                                    {
+                                        "name": "ASNode1",
+                                        "ipv4Address": "10.0.0.11"
+                                    },
+                                    {
+                                        "name": "ASNode2",
+                                        "ipv4Address": "10.0.0.14"
+                                    }
+                                ],
+                                "hostNetwork": {
+                                    "intents": "[parameters('intentList')]",
+                                    "storageNetworks": "[parameters('storageNetworkList')]",
+                                    "storageConnectivitySwitchless": "[parameters('storageConnectivitySwitchless')]"
+                                },
+                                "adouPath": "[parameters('adouPath')]",
+                                "secretsLocation": "[parameters('secretsLocation')]",
+                                "optionalServices": {
+                                    "customLocation": "[parameters('customLocation')]"
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    ]
+}

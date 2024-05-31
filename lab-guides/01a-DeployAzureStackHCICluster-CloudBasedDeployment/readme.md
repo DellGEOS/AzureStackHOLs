@@ -176,17 +176,17 @@ $Location="eastus"
 
 > If name resolution does not work, simply add IPs to hosts file  you can even use [Host File Editor](https://learn.microsoft.com/en-us/windows/powertoys/hosts-file-editor)
 
-![](./media/powershell010.png)
+![](./media/powershell10.png)
 
 Notice, that host is not replying. That's normal as Windows Firewall does not allow ping. Important is that Name is translated into IP Address.
 
 **Step 2** Test if WINRM works (for PowerShell remoting)
 
-![](./media/powershell011.png)
+![](./media/powershell11.png)
 
 > If WINRM fails and if your management is in different subnet, Windows Firewall is by default configured to accept connections on localsubnet only
 
-![](./media/powershell012.png)
+![](./media/powershell12.png)
 
 > you can modify it by running following code on every node (any, or just some IP address/range)
 

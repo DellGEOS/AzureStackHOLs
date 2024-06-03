@@ -36,7 +36,7 @@
             "metadata": "The oU path"
         },
         "secretsLocation": {
-            "defaultValue": "https://ASClus01-hcikv23456.vault.azure.net",
+            "defaultValue": "https://ASClus01-hcikv5678.vault.azure.net",
             "type": "String",
             "metadata": "The key vault uri"
         },
@@ -151,11 +151,11 @@
             "defaultValue": [
                 {
                     "name": "ASNode1",
-                    "ipv4Address": "10.0.0.11"
+                    "ipv4Address": "10.0.0.13"
                 },
                 {
                     "name": "ASNode2",
-                    "ipv4Address": "10.0.0.14"
+                    "ipv4Address": "10.0.0.11"
                 }
             ],
             "type": "Array",
@@ -181,8 +181,8 @@
                         "Storage"
                     ],
                     "adapter": [
-                        "Ethernet",
-                        "Ethernet 2"
+                        "Port0",
+                        "Port1"
                     ],
                     "overrideVirtualSwitchConfiguration": false,
                     "virtualSwitchConfigurationOverrides": {
@@ -197,7 +197,7 @@
                     },
                     "overrideAdapterProperty": true,
                     "adapterPropertyOverrides": {
-                        "jumboPacket": "9014",
+                        "jumboPacket": "1514",
                         "networkDirect": "Disabled",
                         "networkDirectTechnology": ""
                     }
@@ -210,12 +210,12 @@
             "defaultValue": [
                 {
                     "name": "StorageNetwork1",
-                    "networkAdapterName": "Ethernet",
+                    "networkAdapterName": "Port0",
                     "vlanId": "711"
                 },
                 {
                     "name": "StorageNetwork2",
-                    "networkAdapterName": "Ethernet 2",
+                    "networkAdapterName": "Port1",
                     "vlanId": "712"
                 }
             ],
@@ -291,11 +291,11 @@
                                 "physicalNodes": [
                                     {
                                         "name": "ASNode1",
-                                        "ipv4Address": "10.0.0.11"
+                                        "ipv4Address": "10.0.0.13"
                                     },
                                     {
                                         "name": "ASNode2",
-                                        "ipv4Address": "10.0.0.14"
+                                        "ipv4Address": "10.0.0.11"
                                     }
                                 ],
                                 "hostNetwork": {

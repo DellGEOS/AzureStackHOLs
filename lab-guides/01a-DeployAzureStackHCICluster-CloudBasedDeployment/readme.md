@@ -140,6 +140,8 @@ $Location="eastus"
     if (!(Get-InstalledModule -Name az.accounts -ErrorAction Ignore)){
         Install-Module -Name Az.Accounts -Force 
     }
+    #disable WAM https://learn.microsoft.com/en-us/powershell/azure/authenticate-interactive?view=azps-12.0.0#disable-wam
+    Update-AzConfig -EnableLoginByWam $false
     if (-not (Get-AzContext)){
         Connect-AzAccount -UseDeviceAuthentication
     }
@@ -515,6 +517,7 @@ Networking
     Network adapter 2 VLAN ID:  712 (default)
 
     RDMA Protocol:              Disabled (in case you are running lab in VMs)
+    Jumbo Frames:               1514 (in case you are running lab in VMs as hyper-v does not by default support Jumbo Frames)
 
     Starting IP:                10.0.0.111
     ENding IP:                  10.0.0.116

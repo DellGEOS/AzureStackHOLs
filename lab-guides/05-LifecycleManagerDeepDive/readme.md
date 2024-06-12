@@ -1,17 +1,30 @@
-# About the lab
+# Azure Stack HCI Lifecycle Manager Deep Dive
 
 <!-- TOC -->
 
+- [Azure Stack HCI Lifecycle Manager Deep Dive](#azure-stack-hci-lifecycle-manager-deep-dive)
 - [About the lab](#about-the-lab)
+- [SBE Packages](#sbe-packages)
 - [Getting into Azure Stack PowerShell modules](#getting-into-azure-stack-powershell-modules)
 - [Sideload SBE package](#sideload-sbe-package)
+- [Check versions and status](#check-versions-and-status)
 
 <!-- /TOC -->
 
+# About the lab
+
+In this lab you will learn about SBE packages and how to sideload them using Azure Stack HCI PowerShell modules.
+
+# SBE Packages
+
+**Minimal**
+    Package, that contains only WDAC Policy. OEM can select the minimal level and keep using WAC Extension to update Azure Stack HCI Nodes (HPE).
+
 **Standard**
     Package contains both WDAC policy and Firmware/Drivers/Other software that is updated with CAU.
-    This path was selected by DataON (only latest models), Lenovo (MX455 V3, MX450) and Dell (Both AX nodes and MC). Therefore Dell is the only OEM that provides SBE (with drivers and firmware) for N-1 Generation.
+    This path was selected by DataON (only latest models), Lenovo (MX455 V3, MX450) and Dell (Both AX and MC nodes). Therefore Dell is the only OEM that provides SBE (with drivers and firmware) for N-1 Generation.
 
+For more information about SBE visit https://learn.microsoft.com/en-us/azure-stack/hci/update/solution-builder-extension
 
 # Getting into Azure Stack PowerShell modules
 
@@ -51,18 +64,15 @@ Get-SolutionDiscoveryDiagnosticInfo | Format-List
 
 As you can see, there is Solution and SBE manifest
 
-    Solution   https://aka.ms/AzureEdgeUpdates
-    SBE        https://aka.ms/AzureStackSBEUpdate/DellEMC
+    Solution    https://aka.ms/AzureEdgeUpdates
+    SBE         https://aka.ms/AzureStackSBEUpdate/DellEMC
 
 Each OEM has it's own URL for SBE:
     
     Dell        https://aka.ms/AzureStackSBEUpdate/DellEMC
-    DataOn  https://aka.ms/AzureStackSBEUpdate/DataOn
-    Lenovo  https://aka.ms/AzureStackSBEUpdate/Lenovo
-    HPE     https://aka.ms/AzureStackSBEUpdate/HPE
-
-For more information about SBE visit https://learn.microsoft.com/en-us/azure-stack/hci/update/solution-builder-extension
-
+    DataOn      https://aka.ms/AzureStackSBEUpdate/DataOn
+    Lenovo      https://aka.ms/AzureStackSBEUpdate/Lenovo
+    HPE         https://aka.ms/AzureStackSBEUpdate/HPE
 
 # Sideload SBE package
 
@@ -154,3 +164,16 @@ Invoke-Command -ComputerName $ClusterName -ScriptBlock {
 Or check in portal
 
 ![](./media/edge01.png)
+
+# Check versions and status
+
+
+```PowerShell
+Invoke-Command -ComputerName $ClusterName -ScriptBlock {
+    Get-SolutionUpdateEnvironment | Select Current*,*State,Package*
+}
+ 
+```
+
+
+![](./media/powershell09.png)

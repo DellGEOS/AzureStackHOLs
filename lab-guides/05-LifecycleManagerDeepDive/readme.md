@@ -1,8 +1,8 @@
-# Azure Stack HCI Lifecycle Manager Deep Dive
+# Azure Stack HCI 23H2 Lifecycle Manager Deep Dive
 
 <!-- TOC -->
 
-- [Azure Stack HCI Lifecycle Manager Deep Dive](#azure-stack-hci-lifecycle-manager-deep-dive)
+- [Azure Stack HCI 23H2 Lifecycle Manager Deep Dive](#azure-stack-hci-23h2-lifecycle-manager-deep-dive)
 - [About the lab](#about-the-lab)
 - [SBE Packages](#sbe-packages)
 - [Getting into Azure Stack PowerShell modules](#getting-into-azure-stack-powershell-modules)

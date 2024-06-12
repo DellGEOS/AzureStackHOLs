@@ -1,14 +1,8 @@
 # Azure Stack HCI Hands-on-lab guides
 
-<!-- TOC -->
+## Admin Guides
 
-- [Azure Stack HCI Hands-on-lab guides](#azure-stack-hci-hands-on-lab-guides)
-- [Admin guides](#admin-guides)
-- [Lab guides](#lab-guides)
-- [Tips & Tricks](#tips--tricks)
-- [Deprecated labs](#deprecated-labs)
-
-<!-- /TOC -->focuses at how to deploy and operate labs.
+Guides focused at how to deploy and operate labs
 
 * [01 How to Hydrate MSLab files](admin-guides/01-HydrateMSLab/)
 * [02 Working with MSLab](admin-guides/02-WorkingWithMSLab/)
@@ -17,7 +11,7 @@
 * [05 Network Configuration](admin-guides/05-NetworkConfiguration/)
 * [06 How to Create Windows Server Insider VHD](admin-guides/06-HowToCreateWindowsServerInsiderVHD/)
 
-# Lab guides
+## Lab guides
 
 Guides focused at deploying and operation of Azure Stack HCI Clusters
 
@@ -28,11 +22,11 @@ Guides focused at deploying and operation of Azure Stack HCI Clusters
 * [04 Testing Logical Networks in Azure Stack HCI 23H2](lab-guides/04-TestingLogicalNetworks/)
 * [05 LifeCycle Manager Deep Dive](lab-guides/05-LifecycleManagerDeepDive/)
 
-# Tips & Tricks
+## Tips & Tricks
 
 * [01 Generate Environmental Checker URLs](tips&tricks/01-EnvironmentalCheckerURLs/)
 
-# Deprecated labs
+## Deprecated labs
 
 * [Deploy Azure Virtual Desktop](deprecated/DeployAVDonAzureStackHCI/)
 * [Deploy Azure Stack HCI Cluster using Windows Admin Center](deprecated/DeployAzureStackHCICluster-WAC/)

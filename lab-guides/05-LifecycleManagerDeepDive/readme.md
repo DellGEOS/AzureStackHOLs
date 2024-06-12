@@ -4,7 +4,7 @@
 
 - [About the lab](#about-the-lab)
 - [Getting into Azure Stack PowerShell modules](#getting-into-azure-stack-powershell-modules)
-- [Sideload SBE package for SBE](#sideload-sbe-package-for-sbe)
+- [Sideload SBE package](#sideload-sbe-package)
 
 <!-- /TOC -->
 
@@ -63,7 +63,7 @@ https://aka.ms/AzureStackSBEUpdate/HPE
 For more information about SBE visit https://learn.microsoft.com/en-us/azure-stack/hci/update/solution-builder-extension
 
 
-# Sideload SBE package for SBE
+# Sideload SBE package
 
 https://aka.ms/AzureStackHci/SBE/Sideload
 
@@ -148,10 +148,8 @@ Invoke-Command -ComputerName $ClusterName -ScriptBlock {
     Get-SolutionUpdate | Get-SolutionUpdateRun  | ConvertTo-Json -Depth 8
 }
 
-
 ![](./media/powershell08.png)
 
 Or check in portal
-
 
 ![](./media/edge01.png)

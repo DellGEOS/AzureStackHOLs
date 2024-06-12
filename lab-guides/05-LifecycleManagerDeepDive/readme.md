@@ -51,14 +51,15 @@ Get-SolutionDiscoveryDiagnosticInfo | Format-List
 
 As you can see, there is Solution and SBE manifest
 
-Solution:   https://aka.ms/AzureEdgeUpdates
-SBE:        https://aka.ms/AzureStackSBEUpdate/DellEMC
+    Solution   https://aka.ms/AzureEdgeUpdates
+    SBE        https://aka.ms/AzureStackSBEUpdate/DellEMC
 
 Each OEM has it's own URL for SBE:
-https://aka.ms/AzureStackSBEUpdate/DellEMC
-https://aka.ms/AzureStackSBEUpdate/DataOn
-https://aka.ms/AzureStackSBEUpdate/Lenovo
-https://aka.ms/AzureStackSBEUpdate/HPE
+    
+    Dell        https://aka.ms/AzureStackSBEUpdate/DellEMC
+    DataOn  https://aka.ms/AzureStackSBEUpdate/DataOn
+    Lenovo  https://aka.ms/AzureStackSBEUpdate/Lenovo
+    HPE     https://aka.ms/AzureStackSBEUpdate/HPE
 
 For more information about SBE visit https://learn.microsoft.com/en-us/azure-stack/hci/update/solution-builder-extension
 

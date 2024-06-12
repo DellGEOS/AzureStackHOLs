@@ -8,7 +8,8 @@
     - [LabConfig](#labconfig)
     - [Task01 - Prepare Active Directory](#task01---prepare-active-directory)
     - [Task02 - Prepare Azure](#task02---prepare-azure)
-    - [Task03 - Prepare Azure Stack HCI nodes for Cloud Deployment](#task03---prepare-azure-stack-hci-nodes-for-cloud-deployment)
+    - [Task03 - Test Connectivity to Azure Stack HCI Nodes](#task03---test-connectivity-to-azure-stack-hci-nodes)
+    - [Task04 - Prepare Azure Stack HCI nodes for Cloud Deployment](#task04---prepare-azure-stack-hci-nodes-for-cloud-deployment)
     - [Task03 - Add some final touches before launching cloud deployment from portal](#task03---add-some-final-touches-before-launching-cloud-deployment-from-portal)
     - [Task04 - Perform Azure Stack HCI deployment from Azure Portal](#task04---perform-azure-stack-hci-deployment-from-azure-portal)
     - [Task05 - Monitor Deployment Progress](#task05---monitor-deployment-progress)
@@ -98,7 +99,7 @@ Install-Module AsHciADArtifactsPreCreationTool -Repository PSGallery -Force
 ```
 **Step 2** Populate objects into Active Directory
 
-> note: in 2402 release is just OU and LCM user deployed and GPO inheritance blocked on OU
+> note: since 2402 release is just OU and LCM user deployed and GPO inheritance blocked on OU
 
 ```PowerShell
     #make sure active directory module and GPMC is installed
@@ -291,7 +292,7 @@ Invoke-Command -ComputerName $servers -ScriptBlock {
  
 ```
 
-**Step 3** Install Dell Drivers
+**Step 3** Install Dell Drivers (NICs only)
 
 ```PowerShell
 $DSUDownloadFolder="$env:USERPROFILE\Downloads\DSU"
@@ -339,10 +340,16 @@ $Compliance | Out-GridView
 #Or just choose what updates to install
 #$Compliance=$Compliance | Out-GridView -OutputMode Multiple
 
+#Select only NIC drivers/firmware (as the rest will be processed by SBE)
+$Compliance=$Compliance | Where-Object categoryType -eq "NI"
+
 #Install Dell updates https://www.dell.com/support/home/en-us/product-support/product/system-update/docs
 Invoke-Command -Session $Sessions -ScriptBlock {
-    $UpdateNames=(($using:Compliance | Where-Object {$_.ServerName -eq $env:computername -and $_.compliancestatus -eq $false}).PackageFilePath | Split-Path -Leaf) -join ","
-    & "C:\Program Files\Dell\DELL System Update\DSU.exe" --update-list="$UpdateNames" --apply-upgrades --apply-downgrades
+    $Packages=(($using:Compliance | Where-Object {$_.ServerName -eq $env:computername -and $_.compliancestatus -eq $false}))
+    if ($Packages){
+        $UpdateNames=($packages.PackageFilePath | Split-Path -Leaf) -join ","
+        & "C:\Program Files\Dell\DELL System Update\DSU.exe" --update-list="$UpdateNames" --apply-upgrades --apply-downgrades
+    }
 }
 $Sessions | Remove-PSSession
  
@@ -361,7 +368,20 @@ Foreach ($Server in $Servers){
  
 ```
 
-**Step 5** Install PowerShell modules on nodes
+**Step 5** Populate SBE Package on nodes (Dell AX Nodes)
+
+```PowerShell
+        #download SBE 2405 package to nodes
+        Invoke-Command -computername $Servers -scriptblock {
+            Start-BitsTransfer -Source https://dl.dell.com/FOLDER11684237M/1/Bundle_SBE_Dell_AS-HCI-AX_4.1.2405.2001.zip -Destination $env:userprofile\DOwnloads\Bundle_SBE_Dell_AS-HCI-AX_4.1.2405.2001.zip
+            #unzip to c:\SBE
+            New-Item -Path c:\ -Name SBE -ItemType Directory -ErrorAction Ignore
+            Expand-Archive -LiteralPath $env:userprofile\DOwnloads\Bundle_SBE_Dell_AS-HCI-AX_4.1.2405.2001.zip -DestinationPath C:\SBE
+        } -Credential $Credentials
+ 
+```
+
+**Step 6** Install PowerShell modules on nodes
 
 > To push ARC agent, new PowerShell module AzSHCI.ArcInstaller is required. Az.Resources and Az.Accounts modules are then used by arcinstaller configure RBAC on azure resources.
 
@@ -396,7 +416,7 @@ Invoke-Command -ComputerName $Servers -ScriptBlock {
 
 ```
 
-**Step 6** Make sure resource providers are registered
+**Step 7** Make sure resource providers are registered
 
 ```PowerShell
 Register-AzResourceProvider -ProviderNamespace "Microsoft.HybridCompute"
@@ -406,7 +426,7 @@ Register-AzResourceProvider -ProviderNamespace "Microsoft.AzureStackHCI"
  
 ```
 
-**Step 7** Deploy ARC agent with Invoke-AzStackHCIarcInitialization
+**Step 8** Deploy ARC agent with Invoke-AzStackHCIarcInitialization
 
 ```PowerShell
 #deploy ARC Agent
@@ -477,6 +497,7 @@ Invoke-Command -ComputerName $servers -ScriptBlock {
 ```
 
 ![](./media/edge04.png)
+
 
 **Step 4** Configure new admin password on nodes (as Cloud Deployment requires at least 12chars)
 
@@ -558,7 +579,7 @@ Tags:
 
 ![](./media/edge08.png)
 
-You also might need to disable RDMA as VM network adapters do not support RDMA
+You also might need to disable RDMA as VM network adapters do not support RDMA and Jumbo Frames.
 
 ![](./media/edge08.5.png)
 

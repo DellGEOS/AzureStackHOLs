@@ -18,7 +18,7 @@
 
 ## About the lab
 
-In this lab you will deploy 2 node Azure Stack HCI cluster using [cloud deployment](https://learn.microsoft.com/en-us/azure-stack/hci/whats-new#cloud-based-deployment) available now in Public Preview. Since this is public preview, the process will likely to change as there is room to improve.
+In this lab you will deploy 2 node Azure Stack HCI cluster using [cloud deployment](https://learn.microsoft.com/en-us/azure-stack/hci/whats-new#cloud-based-deployment). Since this is public preview, the process will likely to change as there is room to improve.
 
 The lab is based on [AzSHCI and Cloud Based Deployment](https://github.com/microsoft/MSLab/tree/master/Scenarios/AzSHCI%20and%20Cloud%20Based%20Deployment) MSLab scenario.
 
@@ -26,9 +26,7 @@ You can also deploy physical machines with [MDT](../../admin-guides/03-DeployPhy
 
 You can deploy physical machines with simple click-next-next from ISO. Make sure correct OS disk is selected and if DHCP is not available, configure an IP address and rename computers.
 
-> it is important to understand, that Cloud Deployment is not yet supported from any OEM. If you want deploy physical machines, it works well. However consider disabling Bitlocker for OS (or dont forget to suspend bitlocker before reboot after BIOS update) and disabling WDAC (wdac policy is distributed as part of Solution Builder Extension, and is not yet available)
-
-> to this date, the only way to deploy supported Azure Stack HCI 23H2 is to use Dell APEX Cloud Platform for Microsoft Azure
+> Cloud Deployment is now supported on AX nodes.
 
 ## Prerequisites
 
@@ -373,7 +371,7 @@ Foreach ($Server in $Servers){
 ```PowerShell
         #download SBE 2405 package to nodes
         Invoke-Command -computername $Servers -scriptblock {
-            Start-BitsTransfer -Source https://dl.dell.com/FOLDER11684237M/1/Bundle_SBE_Dell_AS-HCI-AX_4.1.2405.2001.zip -Destination $env:userprofile\DOwnloads\Bundle_SBE_Dell_AS-HCI-AX_4.1.2405.2001.zip
+            Start-BitsTransfer -Source https://dl.dell.com/FOLDER11684237M/1/Bundle_SBE_Dell_AS-HCI-AX_4.1.2405.2001.zip -Destination $env:userprofile\Downloads\Bundle_SBE_Dell_AS-HCI-AX_4.1.2405.2001.zip
             #unzip to c:\SBE
             New-Item -Path c:\ -Name SBE -ItemType Directory -ErrorAction Ignore
             Expand-Archive -LiteralPath $env:userprofile\DOwnloads\Bundle_SBE_Dell_AS-HCI-AX_4.1.2405.2001.zip -DestinationPath C:\SBE

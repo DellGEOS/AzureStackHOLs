@@ -155,9 +155,12 @@ Invoke-Command -ComputerName $ClusterName -ScriptBlock {
 
 Or to have detailed status you can query Get-SolutionUpdateRun
 
+```PowerShell
 Invoke-Command -ComputerName $ClusterName -ScriptBlock {
     Get-SolutionUpdate | Get-SolutionUpdateRun  | ConvertTo-Json -Depth 8
 }
+ 
+```
 
 ![](./media/powershell08.png)
 

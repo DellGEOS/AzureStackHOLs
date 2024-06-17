@@ -290,7 +290,7 @@ Invoke-Command -ComputerName $servers -ScriptBlock {
  
 ```
 
-**Step 3** Install Dell Drivers (NICs only)
+**Step 3** Install Dell Drivers
 
 ```PowerShell
 $DSUDownloadFolder="$env:USERPROFILE\Downloads\DSU"
@@ -298,17 +298,42 @@ $DSUDownloadFolder="$env:USERPROFILE\Downloads\DSU"
 #Download DSU
 #https://github.com/DellProSupportGse/Tools/blob/main/DART.ps1
 #download latest DSU to Downloads
-$LatestDSU="https://dl.dell.com/FOLDER10889507M/1/Systems-Management_Application_RPW7K_WN64_2.0.2.3_A00.EXE"
-if (-not (Test-Path $DSUDownloadFolder -ErrorAction Ignore)){New-Item -Path $DSUDownloadFolder -ItemType Directory}
-Start-BitsTransfer -Source $LatestDSU -Destination $DSUDownloadFolder\DSU.exe
+    $LatestDSU="https://dl.dell.com/FOLDER10889507M/1/Systems-Management_Application_RPW7K_WN64_2.0.2.3_A00.EXE"
+    if (-not (Test-Path $DSUDownloadFolder -ErrorAction Ignore)){New-Item -Path $DSUDownloadFolder -ItemType Directory}
+    Start-BitsTransfer -Source $LatestDSU -Destination $DSUDownloadFolder\DSU.exe
 
-#upload DSU to servers
+#Download catalog and unpack
+    Start-BitsTransfer -Source "https://downloads.dell.com/catalog/ASHCI-Catalog.xml.gz" -Destination "$env:UserProfile\Downloads\ASHCI-Catalog.xml.gz"
+    #unzip gzip to a folder https://scatteredcode.net/download-and-extract-gzip-tar-with-powershell/
+    Function Expand-GZipArchive{
+        Param(
+            $infile,
+            $outfile = ($infile -replace '\.gz$','')
+            )
+        $input = New-Object System.IO.FileStream $inFile, ([IO.FileMode]::Open), ([IO.FileAccess]::Read), ([IO.FileShare]::Read)
+        $output = New-Object System.IO.FileStream $outFile, ([IO.FileMode]::Create), ([IO.FileAccess]::Write), ([IO.FileShare]::None)
+        $gzipStream = New-Object System.IO.Compression.GzipStream $input, ([IO.Compression.CompressionMode]::Decompress)
+        $buffer = New-Object byte[](1024)
+        while($true){
+            $read = $gzipstream.Read($buffer, 0, 1024)
+            if ($read -le 0){break}
+            $output.Write($buffer, 0, $read)
+            }
+        $gzipStream.Close()
+        $output.Close()
+        $input.Close()
+    }
+    Expand-GZipArchive "$env:UserProfile\Downloads\ASHCI-Catalog.xml.gz" "$DSUDownloadFolder\ASHCI-Catalog.xml"
+
+#upload DSU and catalog to servers
 $Sessions=New-PSSession -ComputerName $Servers -Credential $Credentials
 Invoke-Command -Session $Sessions -ScriptBlock {
     if (-not (Test-Path $using:DSUDownloadFolder -ErrorAction Ignore)){New-Item -Path $using:DSUDownloadFolder -ItemType Directory}
 }
 foreach ($Session in $Sessions){
     Copy-Item -Path "$DSUDownloadFolder\DSU.exe" -Destination "$DSUDownloadFolder" -ToSession $Session -Force -Recurse
+    Copy-Item -Path "$DSUDownloadFolder\ASHCI-Catalog.xml" -Destination "$DSUDownloadFolder" -ToSession $Session -Force -Recurse
+    
 }
 
 #install DSU
@@ -318,7 +343,7 @@ Invoke-Command -Session $Sessions -ScriptBlock {
 
 #Check compliance
 Invoke-Command -Session $Sessions -ScriptBlock {
-    & "C:\Program Files\Dell\DELL System Update\DSU.exe" --compliance --output-format="json" --output="$using:DSUDownloadFolder\Compliance.json"
+    & "C:\Program Files\Dell\DELL System Update\DSU.exe" --compliance --output-format="json" --output="$using:DSUDownloadFolder\Compliance.json" --catalog-location="$using:DSUDownloadFolder\ASHCI-Catalog.xml"
 }
 
 #collect results
@@ -338,15 +363,15 @@ $Compliance | Out-GridView
 #Or just choose what updates to install
 #$Compliance=$Compliance | Out-GridView -OutputMode Multiple
 
-#Select only NIC drivers/firmware (as the rest will be processed by SBE)
-$Compliance=$Compliance | Where-Object categoryType -eq "NI"
+#or Select only NIC drivers/firmware (as the rest will be processed by SBE)
+#$Compliance=$Compliance | Where-Object categoryType -eq "NI"
 
 #Install Dell updates https://www.dell.com/support/home/en-us/product-support/product/system-update/docs
 Invoke-Command -Session $Sessions -ScriptBlock {
     $Packages=(($using:Compliance | Where-Object {$_.ServerName -eq $env:computername -and $_.compliancestatus -eq $false}))
     if ($Packages){
         $UpdateNames=($packages.PackageFilePath | Split-Path -Leaf) -join ","
-        & "C:\Program Files\Dell\DELL System Update\DSU.exe" --update-list="$UpdateNames" --apply-upgrades --apply-downgrades
+        & "C:\Program Files\Dell\DELL System Update\DSU.exe" --catalog-location="$using:DSUDownloadFolder\ASHCI-Catalog.xml" --update-list="$UpdateNames" --apply-upgrades --apply-downgrades
     }
 }
 $Sessions | Remove-PSSession

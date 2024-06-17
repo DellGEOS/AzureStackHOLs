@@ -295,15 +295,27 @@ Invoke-Command -ComputerName $servers -ScriptBlock {
 ```PowerShell
 $DSUDownloadFolder="$env:USERPROFILE\Downloads\DSU"
 
+#Set up web client to download files with autheticated web request
+$WebClient = New-Object System.Net.WebClient
+#$proxy = new-object System.Net.WebProxy
+$proxy = [System.Net.WebRequest]::GetSystemWebProxy()
+$proxy.Credentials = [System.Net.CredentialCache]::DefaultCredentials
+#$proxy.Address = $proxyAdr
+#$proxy.useDefaultCredentials = $true
+$WebClient.proxy = $proxy
+
 #Download DSU
 #https://github.com/DellProSupportGse/Tools/blob/main/DART.ps1
 #download latest DSU to Downloads
     $LatestDSU="https://dl.dell.com/FOLDER10889507M/1/Systems-Management_Application_RPW7K_WN64_2.0.2.3_A00.EXE"
     if (-not (Test-Path $DSUDownloadFolder -ErrorAction Ignore)){New-Item -Path $DSUDownloadFolder -ItemType Directory}
-    Start-BitsTransfer -Source $LatestDSU -Destination $DSUDownloadFolder\DSU.exe
+    #Start-BitsTransfer -Source $LatestDSU -Destination $DSUDownloadFolder\DSU.exe
+    $WebClient.DownloadFile($LatestDSU,"$DSUDownloadFolder\DSU.exe")
 
 #Download catalog and unpack
-    Start-BitsTransfer -Source "https://downloads.dell.com/catalog/ASHCI-Catalog.xml.gz" -Destination "$env:UserProfile\Downloads\ASHCI-Catalog.xml.gz"
+    #Start-BitsTransfer -Source "https://downloads.dell.com/catalog/ASHCI-Catalog.xml.gz" -Destination "$DSUDownloadFolder\ASHCI-Catalog.xml.gz"
+    $WebClient.DownloadFile($LatestDSU,"$DSUDownloadFolder\ASHCI-Catalog.xml.gz")     
+
     #unzip gzip to a folder https://scatteredcode.net/download-and-extract-gzip-tar-with-powershell/
     Function Expand-GZipArchive{
         Param(
@@ -323,7 +335,7 @@ $DSUDownloadFolder="$env:USERPROFILE\Downloads\DSU"
         $output.Close()
         $input.Close()
     }
-    Expand-GZipArchive "$env:UserProfile\Downloads\ASHCI-Catalog.xml.gz" "$DSUDownloadFolder\ASHCI-Catalog.xml"
+    Expand-GZipArchive "$DSUDownloadFolder\ASHCI-Catalog.xml.gz" "$DSUDownloadFolder\ASHCI-Catalog.xml"
 
 #upload DSU and catalog to servers
 $Sessions=New-PSSession -ComputerName $Servers -Credential $Credentials
@@ -333,7 +345,6 @@ Invoke-Command -Session $Sessions -ScriptBlock {
 foreach ($Session in $Sessions){
     Copy-Item -Path "$DSUDownloadFolder\DSU.exe" -Destination "$DSUDownloadFolder" -ToSession $Session -Force -Recurse
     Copy-Item -Path "$DSUDownloadFolder\ASHCI-Catalog.xml" -Destination "$DSUDownloadFolder" -ToSession $Session -Force -Recurse
-    
 }
 
 #install DSU

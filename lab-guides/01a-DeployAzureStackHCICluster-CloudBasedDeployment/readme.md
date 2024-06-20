@@ -314,7 +314,7 @@ $WebClient.proxy = $proxy
 
 #Download catalog and unpack
     #Start-BitsTransfer -Source "https://downloads.dell.com/catalog/ASHCI-Catalog.xml.gz" -Destination "$DSUDownloadFolder\ASHCI-Catalog.xml.gz"
-    $WebClient.DownloadFile($LatestDSU,"$DSUDownloadFolder\ASHCI-Catalog.xml.gz")     
+    $WebClient.DownloadFile("https://downloads.dell.com/catalog/ASHCI-Catalog.xml.gz","$DSUDownloadFolder\ASHCI-Catalog.xml.gz")     
 
     #unzip gzip to a folder https://scatteredcode.net/download-and-extract-gzip-tar-with-powershell/
     Function Expand-GZipArchive{
@@ -410,7 +410,7 @@ Foreach ($Server in $Servers){
             Start-BitsTransfer -Source https://dl.dell.com/FOLDER11684237M/1/Bundle_SBE_Dell_AS-HCI-AX_4.1.2405.2001.zip -Destination $env:userprofile\Downloads\Bundle_SBE_Dell_AS-HCI-AX_4.1.2405.2001.zip
             #unzip to c:\SBE
             New-Item -Path c:\ -Name SBE -ItemType Directory -ErrorAction Ignore
-            Expand-Archive -LiteralPath $env:userprofile\DOwnloads\Bundle_SBE_Dell_AS-HCI-AX_4.1.2405.2001.zip -DestinationPath C:\SBE
+            Expand-Archive -LiteralPath $env:userprofile\Downloads\Bundle_SBE_Dell_AS-HCI-AX_4.1.2405.2001.zip -DestinationPath C:\SBE
         } -Credential $Credentials
  
 ```

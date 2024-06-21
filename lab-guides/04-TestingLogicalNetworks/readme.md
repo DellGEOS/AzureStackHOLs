@@ -17,6 +17,8 @@
 
 In this lab you will learn how to create multiple subnets in existing MSLab deployment, so you can add [logical networks](https://learn.microsoft.com/en-us/azure-stack/hci/manage/tenant-logical-networks) via portal to your cluster.
 
+Make sure you use latest MSLab (hydrate DC with version 24.06.2 and newer)
+
 ## Prerequisites
 
 * Hydrated MSLab with LabConfig from [01-HydrateMSLab](../../admin-guides/01-HydrateMSLab/readme.md)
@@ -47,7 +49,6 @@ You can run following script from Management machine. Notice, that there's a has
 Following example will create 4 subnets, where 2 dhcp scopes will be activated and another two will be inactive.
 
 ```PowerShell
-#create SET Switch to be able to add multiple VLAN enabled networks to DC
 
 $Server="DC"
 $vSwitchName="vSwitch"
@@ -59,6 +60,7 @@ $Networks+= @{ Name='vNet02'; VLANID=2; NICIP='10.0.2.1'; PrefixLength=24; Scope
 $Networks+= @{ Name='vNet03'; VLANID=3; NICIP='10.0.3.1'; PrefixLength=24; ScopeID = '10.0.3.0'; StartRange='10.0.3.10'; EndRange='10.0.3.254'; SubnetMask='255.255.255.0'; DomainName="Corp.contoso.com"; DHCPEnabled=$False }
 $Networks+= @{ Name='vNet04'; VLANID=4; NICIP='10.0.4.1'; PrefixLength=24; ScopeID = '10.0.4.0'; StartRange='10.0.4.10'; EndRange='10.0.4.254'; SubnetMask='255.255.255.0'; DomainName="Corp.contoso.com"; DHCPEnabled=$False }
 
+<#This has been already done in latest MSLab release 24.06.2 once you hydrate DC
 Invoke-Command -ComputerName $Server -ScriptBlock {
     Enable-WindowsOptionalFeature -FeatureName Microsoft-Hyper-V -Online -NoRestart
 }
@@ -77,6 +79,8 @@ Invoke-Command -ComputerName $Server -ScriptBlock {
     New-VMSwitch -CimSession $Server -Name $vSwitchName -NetAdapterName "Ethernet" -EnableEmbeddedTeaming $true
     #rename vNIC "management
     Rename-VMNetworkAdapter -Name $vSwitchName -NewName Management -CimSession $Server -ManagementOS
+
+#>
 
 #create networks
 #make sure DHCP management tools are installed. To view routing on DC you can also install RSAT-RemoteAccess

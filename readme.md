@@ -16,7 +16,7 @@ Guides focused at how to deploy and operate labs
 Guides focused at deploying and operation of Azure Stack HCI Clusters
 
 * [01a Deploy Azure Stack HCI Cluster 23H2 using Cloud Based Deployment](lab-guides/01a-DeployAzureStackHCICluster-CloudBasedDeployment/)
-* [01b Deploy Azure Stack HCI Cluster 22H2 with PowerShell and NetworkATC](lab-guides/01b-DeployAzureStackHCICluster22H2-PowerShell-NetATC/)
+* [01b Deploy Azure Stack HCI Cluster 23H2 using new WebUI (preview)](lab-guides/01b-DeployAzureStackHCICluster-WebUI/)
 * [02 Test Azure Stack HCI performance with VMFleet](lab-guides/02-TestPerformanceWithVMFleet/)
 * [03 Testing Windows Server 2025 Insider Preview](lab-guides/03-TestingWindowsServerInsider/)
 * [04 Testing Logical Networks in Azure Stack HCI 23H2](lab-guides/04-TestingLogicalNetworks/)
@@ -28,6 +28,7 @@ Guides focused at deploying and operation of Azure Stack HCI Clusters
 
 ## Deprecated labs
 
+* [Deploy Azure Stack HCI Cluster 22H2 with PowerShell and NetworkATC](deprecated/DeployAzureStackHCICluster22H2-PowerShell-NetATC/)
 * [Deploy Azure Virtual Desktop](deprecated/DeployAVDonAzureStackHCI/)
 * [Deploy Azure Stack HCI Cluster using Windows Admin Center](deprecated/DeployAzureStackHCICluster-WAC/)
 * [Deploy Azure Stack HCI Cluster using PowerShell (21H2 and Windows Server 2022)](deprecated/DeployAzureStackHCICluster21H2-PowerShell/)

@@ -48,7 +48,7 @@ You can notice, that there are VLANs 711-719.
 $LabConfig=@{AllowedVLANs="1-10,711-719" ; DomainAdminName='LabAdmin'; AdminPassword='LS1setup!' ; DCEdition='4'; Internet=$true; TelemetryLevel='Full' ; TelemetryNickname='' ; AdditionalNetworksConfig=@(); VMs=@()}
 
 #Azure Stack HCI 23H2
-#labconfig will not domain join VMs, will add "Tools disk" and will also execute powershell command to make this tools disk online.
+#labconfig will not domain join VMs
 1..2 | ForEach-Object {$LABConfig.VMs += @{ VMName = "ASNode$_" ; Configuration = 'S2D' ; ParentVHD = 'AzSHCI23H2_G2.vhdx' ; HDDNumber = 4 ; HDDSize= 2TB ; MemoryStartupBytes= 20GB; VMProcessorCount="MAX" ; vTPM=$true ; Unattend="NoDjoin" ; NestedVirt=$true }}
 
 #Windows Admin Center in GW mode
@@ -540,6 +540,59 @@ Invoke-Command -ComputerName $servers -ScriptBlock {
     Invoke-Command -ComputerName $servers -ScriptBlock {
         Set-LocalUser -Name Administrator -AccountNeverExpires -Password (ConvertTo-SecureString "LS1setup!LS1setup!" -AsPlainText -Force)
     } -Credential $Credentials
+ 
+```
+
+**Step 5** Optional - configure iDRAC IP adresses and make sure passthrough interface is enabled
+
+```PowerShell
+#$iDRACCredentials=Get-Credential #grab iDRAC credentials
+$iDracUsername="LabAdmin"
+$iDracPassword="LS1setup!"
+$SecureStringPassword = ConvertTo-SecureString $iDracPassword -AsPlainText -Force
+$iDRACCredentials = New-Object System.Management.Automation.PSCredential ($iDracUsername, $SecureStringPassword)
+#IP = Idrac IP Address, USBNICIP = IP Address of  that will be configured in OS to iDRAC Pass-through USB interface
+#You can configure all to be 169.254.0.1. Openmanage extension still recommends having each IP to be unique. on node 1 it would be 169.254.11.1 iDRAC and +1 in OS (169.254.11.2)
+$iDRACs=@()
+$iDRACs+=@{IP="192.168.100.139" ; USBNICIP="169.254.11.1"}
+$iDRACs+=@{IP="192.168.100.140" ; USBNICIP="169.254.11.3"}
+
+#ignoring cert is needed for posh5. In 6 and newer you can just add -SkipCertificateCheck to Invoke-WebRequest
+function Ignore-SSLCertificates {
+    $Provider = New-Object Microsoft.CSharp.CSharpCodeProvider
+    $Compiler = $Provider.CreateCompiler()
+    $Params = New-Object System.CodeDom.Compiler.CompilerParameters
+    $Params.GenerateExecutable = $False
+    $Params.GenerateInMemory = $true
+    $Params.IncludeDebugInformation = $False
+    $Params.ReferencedAssemblies.Add("System.DLL") > $null
+    $TASource=@'
+    namespace Local.ToolkitExtensions.Net.CertificatePolicy
+    {
+        public class TrustAll : System.Net.ICertificatePolicy
+        {
+            public bool CheckValidationResult(System.Net.ServicePoint sp,System.Security.Cryptography.X509Certificates.X509Certificate cert, System.Net.WebRequest req, int problem)
+            {
+                return true;
+            }
+        }
+    }
+'@ 
+    $TAResults=$Provider.CompileAssemblyFromSource($Params,$TASource)
+    $TAAssembly=$TAResults.CompiledAssembly
+    $TrustAll = $TAAssembly.CreateInstance("Local.ToolkitExtensions.Net.CertificatePolicy.TrustAll")
+    [System.Net.ServicePointManager]::CertificatePolicy = $TrustAll
+}
+Ignore-SSLCertificates
+
+#Patch Enable OS to iDrac Pass-through and configure IP
+$Headers=@{"Accept"="application/json"}
+$ContentType='application/json'
+foreach ($iDRAC in $iDRACs){
+    $uri="https://$($idrac.IP)/redfish/v1/Managers/iDRAC.Embedded.1/Attributes"
+    $JSONBody=@{"Attributes"=@{"OS-BMC.1.UsbNicIpAddress"="$($iDRAC.USBNICIP)";"OS-BMC.1.AdminState"="Enabled"}} | ConvertTo-Json -Compress
+    Invoke-WebRequest -Body $JsonBody -Method Patch -ContentType $ContentType -Headers $Headers -Uri $uri -Credential $iDRACCredentials
+}
  
 ```
 

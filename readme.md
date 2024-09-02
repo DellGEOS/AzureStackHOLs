@@ -1,12 +1,14 @@
 # Azure Stack HCI Hands-on-lab guides
 
-## Admin Guides
+<!-- TOC -->
 
-Guides focused at how to deploy and operate labs
+- [Azure Stack HCI Hands-on-lab guides](#azure-stack-hci-hands-on-lab-guides)
+    - [Admin Guides](#admin-guides)
+    - [Lab guides](#lab-guides)
+    - [Tips & Tricks](#tips--tricks)
+    - [Deprecated labs](#deprecated-labs)
 
-* [01 How to Hydrate MSLab files](admin-guides/01-HydrateMSLab/)
-* [02 Working with MSLab](admin-guides/02-WorkingWithMSLab/)
-* [03 Deploy Physical Servers with MSLab](admin-guides/03-DeployPhysicalServersWithMSLab/)
+<!-- /TOC -->Physical Servers with MSLab](admin-guides/03-DeployPhysicalServersWithMSLab/)
 * [04 How to Hydrate MSLab files with SCVMM](admin-guides/04-HydrateMSLab%2BSCVMM/)
 * [05 Network Configuration](admin-guides/05-NetworkConfiguration/)
 * [06 How to Create Windows Server Insider VHD](admin-guides/06-HowToCreateWindowsServerInsiderVHD/)

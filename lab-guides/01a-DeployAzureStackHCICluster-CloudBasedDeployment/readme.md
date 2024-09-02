@@ -15,6 +15,7 @@
     - [Task05 - Monitor Deployment Progress](#task05---monitor-deployment-progress)
 
 <!-- /TOC -->
+<!-- /TOC -->
 
 ## About the lab
 
@@ -136,24 +137,16 @@ $Location="eastus"
 
 #login to azure
     #download Azure module
+    Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force
     if (!(Get-InstalledModule -Name az.accounts -ErrorAction Ignore)){
         Install-Module -Name Az.Accounts -Force 
     }
-    #disable WAM https://learn.microsoft.com/en-us/powershell/azure/authenticate-interactive?view=azps-12.0.0#disable-wam
-    Update-AzConfig -EnableLoginByWam $false
-    if (-not (Get-AzContext)){
-        Connect-AzAccount -UseDeviceAuthentication
-    }
+    #login
+    Connect-AzAccount -UseDeviceAuthentication
 
-#select subscription if more available
-    $subscriptions=Get-AzSubscription
-    if (($subscriptions).count -gt 1){
-        $SubscriptionID=($Subscriptions | Out-GridView -OutputMode Single -Title "Please Select Subscription").ID
-        $Subscriptions | Where-Object ID -eq $SubscriptionID | Select-AzSubscription
-    }else{
-        $SubscriptionID=$subscriptions.id
-    }
- 
+    #assuming new az.accounts module was used and it asked you what subscription to use - then correct subscription is selected for context
+    $Subscription=(Get-AzContext).Subscription
+
 ```
 
 **Step 2** Install PowerShell module and create Resource Group

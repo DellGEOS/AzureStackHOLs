@@ -182,13 +182,12 @@ $Credentials= New-Object System.Management.Automation.PSCredential ($UserName,$S
 $SecuredPassword = ConvertTo-SecureString $LCMPassword -AsPlainText -Force
 $LCMCredentials= New-Object System.Management.Automation.PSCredential ($LCMUserName,$SecuredPassword)
 
+#configure trusted hosts to be able to communicate with servers (not secure as you send credentials over to remote host)
+$TrustedHosts=@()
+$TrustedHosts+=$Servers
+Set-Item WSMan:\localhost\Client\TrustedHosts -Value $($TrustedHosts -join ',') -Force
 
 # region to sucessfully validate you need make sure there's just one GW
-    #configure trusted hosts to be able to communicate with servers (not secure as you send credentials over to remote host)
-    $TrustedHosts=@()
-    $TrustedHosts+=$Servers
-    Set-Item WSMan:\localhost\Client\TrustedHosts -Value $($TrustedHosts -join ',') -Force
-    
     #make sure there is only one management NIC with IP address (setup is complaining about multiple gateways)
     Invoke-Command -ComputerName $servers -ScriptBlock {
         Get-NetIPConfiguration | Where-Object IPV4defaultGateway | Get-NetAdapter | Sort-Object Name | Select-Object -Skip 1 | Set-NetIPInterface -Dhcp Disabled

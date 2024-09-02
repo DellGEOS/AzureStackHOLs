@@ -32,6 +32,8 @@
 
 > Scalable topology is what we have in the lab
 
+> You can also boot servers using modified ISO (not requiring pressing button to boot) and physical servers can [boot directly to ISO using iDRAC](../../tips&tricks/02-BootToNetworkISO/readme.md)
+
 ![](./media/topology01.png)
 
 ![](./media/topology02.png)

@@ -397,18 +397,41 @@ Foreach ($Server in $Servers){
 
 **Step 5** Populate SBE Package on nodes (Dell AX Nodes)
 
+Note: following is just an example. There might be newer version available https://www.dell.com/support/kbdoc/en-us/000224407 (currently it is [SBE_Dell_AS-HCI-AX_4.1.2406.3001.zip](https://dl.dell.com/protected/drivers/FOLDER11833185M/1/Bundle_SBE_Dell_AS-HCI-AX_4.1.2406.3001.zip)). Most up-to-date version information can be found here: https://aka.ms/AzureStackSBEUpdate/DellEMC
+
 ```PowerShell
-        #download SBE 2405 package to nodes
-        Invoke-Command -computername $Servers -scriptblock {
-            Start-BitsTransfer -Source https://dl.dell.com/FOLDER11684237M/1/Bundle_SBE_Dell_AS-HCI-AX_4.1.2405.2001.zip -Destination $env:userprofile\Downloads\Bundle_SBE_Dell_AS-HCI-AX_4.1.2405.2001.zip
+        #download package to Downloads
+        Invoke-WebRequest -Uri https://dl.dell.com/protected/drivers/FOLDER11833185M/1/Bundle_SBE_Dell_AS-HCI-AX_4.1.2406.3001.zip -OutFile $env:userprofile\Downloads\Bundle_SBE_Dell_AS-HCI-AX_4.1.2406.3001.zip -UserAgent "DellGEOS"
+        #Transfer to servers
+        $Sessions=New-PSSession -ComputerName $Servers
+        foreach ($Session in $Session){
+            Copy-Item -Path $env:userprofile\Downloads\Bundle_SBE_Dell_AS-HCI-AX_4.1.2406.3001.zip -Destination c:\users\$UserName\downloads\ -ToSession $Session
+        }
+
+        Invoke-Command -ComputerName $Servers -scriptblock {
+            #Invoke-WebRequest -Uri https://dl.dell.com/protected/drivers/FOLDER11833185M/1/Bundle_SBE_Dell_AS-HCI-AX_4.1.2406.3001.zip -OutFile $env:userprofile\Downloads\Bundle_SBE_Dell_AS-HCI-AX_4.1.2406.3001.zip -UserAgent "DellGEOS"
             #unzip to c:\SBE
             New-Item -Path c:\ -Name SBE -ItemType Directory -ErrorAction Ignore
-            Expand-Archive -LiteralPath $env:userprofile\Downloads\Bundle_SBE_Dell_AS-HCI-AX_4.1.2405.2001.zip -DestinationPath C:\SBE
+            Expand-Archive -LiteralPath $env:userprofile\Downloads\Bundle_SBE_Dell_AS-HCI-AX_4.1.2406.3001.zip -DestinationPath C:\SBE
         } -Credential $Credentials
+
+        $Sessions | Remove-PSSession
  
 ```
 
-**Step 6** Install PowerShell modules on nodes
+**Step 6** Exclude iDRAC usb NICs from cluster networks (Dell AX Nodes)
+
+Note: cluster validation was failing in latest version
+
+```Powershell
+Invoke-Command -computername $Servers -scriptblock {
+    New-Item -Path HKLM:\system\currentcontrolset\services\clussvc\parameters
+    New-ItemProperty -Path HKLM:\system\currentcontrolset\services\clussvc\parameters -Name ExcludeAdaptersByDescription -Value "Remote NDIS Compatible Device"
+}
+ 
+```
+
+**Step 7** Install PowerShell modules on nodes
 
 > To push ARC agent, new PowerShell module AzSHCI.ArcInstaller is required. Az.Resources and Az.Accounts modules are then used by arcinstaller configure RBAC on azure resources.
 
@@ -443,7 +466,7 @@ Invoke-Command -ComputerName $Servers -ScriptBlock {
 
 ```
 
-**Step 7** Make sure resource providers are registered
+**Step 8** Make sure resource providers are registered
 
 ```PowerShell
 Register-AzResourceProvider -ProviderNamespace "Microsoft.HybridCompute"
@@ -453,7 +476,7 @@ Register-AzResourceProvider -ProviderNamespace "Microsoft.AzureStackHCI"
  
 ```
 
-**Step 8** Deploy ARC agent with Invoke-AzStackHCIarcInitialization
+**Step 9** Deploy ARC agent with Invoke-AzStackHCIarcInitialization
 
 ```PowerShell
 #deploy ARC Agent

@@ -403,7 +403,7 @@ Note: following is just an example. There might be newer version available https
         #download package to Downloads
         Invoke-WebRequest -Uri https://dl.dell.com/protected/drivers/FOLDER11833185M/1/Bundle_SBE_Dell_AS-HCI-AX_4.1.2406.3001.zip -OutFile $env:userprofile\Downloads\Bundle_SBE_Dell_AS-HCI-AX_4.1.2406.3001.zip -UserAgent "DellGEOS"
         #Transfer to servers
-        $Sessions=New-PSSession -ComputerName $Servers
+        $Sessions=New-PSSession -ComputerName $Servers -Credential $Credentials
         foreach ($Session in $Session){
             Copy-Item -Path $env:userprofile\Downloads\Bundle_SBE_Dell_AS-HCI-AX_4.1.2406.3001.zip -Destination c:\users\$UserName\downloads\ -ToSession $Session
         }
@@ -427,8 +427,8 @@ Note: cluster validation was failing in latest version
 Invoke-Command -computername $Servers -scriptblock {
     New-Item -Path HKLM:\system\currentcontrolset\services\clussvc\parameters
     New-ItemProperty -Path HKLM:\system\currentcontrolset\services\clussvc\parameters -Name ExcludeAdaptersByDescription -Value "Remote NDIS Compatible Device"
-}
- 
+} -Credential $Credentials
+
 ```
 
 **Step 7** Install PowerShell modules on nodes

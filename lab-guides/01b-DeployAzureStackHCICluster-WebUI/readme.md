@@ -14,7 +14,6 @@
         - [Deploy Azure Stack from Azure Portal](#deploy-azure-stack-from-azure-portal)
 
 <!-- /TOC -->
-
 ## About the lab
 
 [Light touch provisioning (preview)](https://learn.microsoft.com/en-us/azure-stack/hci/deploy/deployment-arc-register-local-ui) allows you to use local web UI on Azure Stack HCI to onboard Azure Stack HCI nodes to Azure Portal.
@@ -304,7 +303,7 @@ Set-Item WSMan:\localhost\Client\TrustedHosts -Value $($TrustedHosts -join ',') 
     #download package to Downloads
     Invoke-WebRequest -Uri https://dl.dell.com/protected/drivers/FOLDER11833185M/1/Bundle_SBE_Dell_AS-HCI-AX_4.1.2406.3001.zip -OutFile $env:userprofile\Downloads\Bundle_SBE_Dell_AS-HCI-AX_4.1.2406.3001.zip -UserAgent "DellGEOS"
     #Transfer to servers
-    $Sessions=New-PSSession -ComputerName $Servers
+    $Sessions=New-PSSession -ComputerName $Servers -Credential $Credentials
     foreach ($Session in $Session){
         Copy-Item -Path $env:userprofile\Downloads\Bundle_SBE_Dell_AS-HCI-AX_4.1.2406.3001.zip -Destination c:\users\$UserName\downloads\ -ToSession $Session
     }
@@ -323,7 +322,7 @@ Set-Item WSMan:\localhost\Client\TrustedHosts -Value $($TrustedHosts -join ',') 
     Invoke-Command -computername $Servers -scriptblock {
         New-Item -Path HKLM:\system\currentcontrolset\services\clussvc\parameters
         New-ItemProperty -Path HKLM:\system\currentcontrolset\services\clussvc\parameters -Name ExcludeAdaptersByDescription -Value "Remote NDIS Compatible Device"
-    }
+    } -Credential $Credentials
     
 #endregion
 

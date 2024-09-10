@@ -3,19 +3,19 @@
 <!-- TOC -->
 
 - [Azure Stack HCI 23H2 Lifecycle Manager Deep Dive](#azure-stack-hci-23h2-lifecycle-manager-deep-dive)
-- [About the lab](#about-the-lab)
-- [SBE Packages](#sbe-packages)
-- [Getting into Azure Stack PowerShell modules](#getting-into-azure-stack-powershell-modules)
-- [Sideload SBE package](#sideload-sbe-package)
-- [Check versions and status](#check-versions-and-status)
+    - [About the lab](#about-the-lab)
+    - [SBE Packages](#sbe-packages)
+    - [Getting into Azure Stack PowerShell modules](#getting-into-azure-stack-powershell-modules)
+    - [Sideload SBE package](#sideload-sbe-package)
+    - [Check versions and status](#check-versions-and-status)
 
 <!-- /TOC -->
 
-# About the lab
+## About the lab
 
 In this lab you will learn about SBE packages and how to sideload them using Azure Stack HCI PowerShell modules.
 
-# SBE Packages
+## SBE Packages
 
 **Minimal**
     Package, that contains only WDAC Policy. OEM can select the minimal level and keep using WAC Extension to update Azure Stack HCI Nodes (HPE).
@@ -26,7 +26,7 @@ In this lab you will learn about SBE packages and how to sideload them using Azu
 
 For more information about SBE visit https://learn.microsoft.com/en-us/azure-stack/hci/update/solution-builder-extension
 
-# Getting into Azure Stack PowerShell modules
+## Getting into Azure Stack PowerShell modules
 
 Let's list all posh modules related to Azure Stack
 
@@ -74,7 +74,7 @@ Each OEM has it's own URL for SBE:
     Lenovo      https://aka.ms/AzureStackSBEUpdate/Lenovo
     HPE         https://aka.ms/AzureStackSBEUpdate/HPE
 
-# Sideload SBE package
+## Sideload SBE package
 
 https://aka.ms/AzureStackHci/SBE/Sideload
 
@@ -141,6 +141,17 @@ Invoke-Command -ComputerName $ClusterName -ScriptBlock {
  
 ```
 
+Note: if this is the first time and you run it from powershell, you might need to add CAU role to your cluster
+
+```PowerShell
+    if (-not (Get-CAUClusterRole -ClusterName $ClusterName)){
+        Add-CauClusterRole -ClusterName $ClusterName -MaxFailedNodes 0 -RequireAllNodesOnline -EnableFirewallRules -GroupName "$ClusterName-CAU" -VirtualComputerObjectName "$ClusterName-CAU" -Force -CauPluginName Microsoft.WindowsUpdatePlugin -MaxRetriesPerNode 3 -CauPluginArguments @{ 'IncludeRecommendedUpdates' = 'False' } -StartDate "3/2/2017 3:00:00 AM" -DaysOfWeek 4 -WeeksOfMonth @(3) -verbose
+    #disable self-updating
+        Disable-CauClusterRole -ClusterName $ClusterName -Force
+    }
+ 
+```
+
 To check status you can run following code
 
 
@@ -168,7 +179,7 @@ Or check in portal
 
 ![](./media/edge01.png)
 
-# Check versions and status
+## Check versions and status
 
 
 ```PowerShell

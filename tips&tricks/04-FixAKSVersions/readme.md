@@ -55,3 +55,5 @@ $CustomLocationID=($CustomLocation).ID
 Versions before and after patching
 
 ![](./media/powershell01.png)
+
+![](./media/edge02.png)

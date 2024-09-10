@@ -322,6 +322,7 @@ Set-Item WSMan:\localhost\Client\TrustedHosts -Value $($TrustedHosts -join ',') 
     Invoke-Command -computername $Servers -scriptblock {
         New-Item -Path HKLM:\system\currentcontrolset\services\clussvc\parameters
         New-ItemProperty -Path HKLM:\system\currentcontrolset\services\clussvc\parameters -Name ExcludeAdaptersByDescription -Value "Remote NDIS Compatible Device"
+        #Get-ItemProperty -Path HKLM:\system\currentcontrolset\services\clussvc\parameters -Name ExcludeAdaptersByDescription | Format-List ExcludeAdaptersByDescription
     } -Credential $Credentials
     
 #endregion

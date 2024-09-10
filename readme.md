@@ -25,6 +25,8 @@ Guides focused at deploying and operation of Azure Stack HCI Clusters
 * [01 Generate Environmental Checker URLs](tips&tricks/01-EnvironmentalCheckerURLs/)
 * [02 Boot to Network ISO](tips&tricks/02-BootToNetworkISO/)
 * [03 Override IP Adresses in NetATC intent](tips&tricks/03-OverrideIPAddressesinNetATCIntent/)
+* [04 Fix AKS Versions](tips&tricks/04-FixAKSVersions/)
+
 
 ## Deprecated labs
 

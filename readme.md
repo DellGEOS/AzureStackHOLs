@@ -3,12 +3,11 @@
 <!-- TOC -->
 
 - [Azure Stack HCI Hands-on-lab guides](#azure-stack-hci-hands-on-lab-guides)
-    - [Admin Guides](#admin-guides)
     - [Lab guides](#lab-guides)
     - [Tips & Tricks](#tips--tricks)
     - [Deprecated labs](#deprecated-labs)
 
-<!-- /TOC -->Create Windows Server Insider VHD](admin-guides/06-HowToCreateWindowsServerInsiderVHD/)
+<!-- /TOC -->
 
 ## Lab guides
 
@@ -25,7 +24,7 @@ Guides focused at deploying and operation of Azure Stack HCI Clusters
 
 * [01 Generate Environmental Checker URLs](tips&tricks/01-EnvironmentalCheckerURLs/)
 * [02 Boot to Network ISO](tips&tricks/02-BootToNetworkISO/)
-* [03 Override IP Adresses in NetATC intent](03-OverrideIPAddressesinNetATCIntent)
+* [03 Override IP Adresses in NetATC intent](tips&tricks/03-OverrideIPAddressesinNetATCIntent/)
 
 ## Deprecated labs
 

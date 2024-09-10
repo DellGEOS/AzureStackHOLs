@@ -28,7 +28,7 @@ Guides focused at deploying and operation of Azure Stack HCI Clusters
 * [02 Boot to Network ISO](tips&tricks/02-BootToNetworkISO/)
 * [03 Override IP Adresses in NetATC intent](tips&tricks/03-OverrideIPAddressesinNetATCIntent/)
 * [04 Fix AKS Versions](tips&tricks/04-FixAKSVersions/)
-* [05 Fix Azure Stack HCI Extensions](tips&tricks/04-FixExtensions/)
+* [05 Fix Azure Stack HCI Extensions](tips&tricks/05-FixExtensions/)
 
 ## Deprecated labs
 

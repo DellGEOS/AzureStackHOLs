@@ -1,4 +1,4 @@
-There exist today multiple repositories and methods for checking if your Azure Stack HCI host or hosts are able to access all of the URLs and ports that Azure Stack HCI needs to be able to access, both for deployment and for ongoing management activities.
+Today, multiple repositories and methods exist for checking if your Azure Stack HCI host or hosts are able to access all of the URLs and ports that Azure Stack HCI needs to be able to access, both for deployment and for ongoing management activities.
 
 This PowerShell Script is designed to consolidate a bunch of these disparate sources into one, simple to run script, which provides actionable output.
 

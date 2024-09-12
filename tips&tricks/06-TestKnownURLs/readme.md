@@ -9,3 +9,5 @@ There is a section which tests URLs/ports required for the Dell APEX Cloud Platf
 This is intended to provide a starting point, into which you the community can contribute your experience to augment the testing done here. Please open pull requests to make any changes to the script, or additions to URL tests as appropriate - this is not a static space, and sharing knowledge and building together is how we'll build the most robust community tooling for this ecosystem.
 
 The Script is available [here](AzSHCIURLTester.ps1).
+
+To use the script, download and copy it onto the node or nodes from which you want to test connectivity, open a PowerShell window as Administrator, and run the script. 

@@ -1,28 +1,3 @@
-<<<<<<< HEAD
-=======
-# User-editable section for known incorrect URLs
-$knownIncorrectUrls = @(
-    "wustat.windows.com" # Add known incorrect URLs here
-    # Example: "incorrect-url1.com", "incorrect-url2.com"
-)
-
-# Check if the AzStackHci.EnvironmentChecker module is installed
-$moduleName = "AzStackHci.EnvironmentChecker"
-$installedModule = Get-Module -Name $moduleName -ListAvailable | Sort-Object Version -Descending | Select-Object -First 1
-
-if (-not $installedModule) {
-    Write-Host "The AzStackHci.EnvironmentChecker module is not installed. Please install it using 'Install-Module AzStackHci.EnvironmentChecker' and try again."
-    exit
-}
-
-# Check if the installed version is the latest available
-$latestModule = Find-Module -Name $moduleName
-if ($installedModule.Version -lt $latestModule.Version) {
-    Write-Host "The installed version of AzStackHci.EnvironmentChecker is not the latest. Please update it using 'Update-Module AzStackHci.EnvironmentChecker' and try again."
-    exit
-}
-
->>>>>>> 883cfc193a8b6e374f487826afa6ea13d8ac5ce4
 # Initialize the results array
 $results = @()
 
@@ -290,7 +265,6 @@ $results += $additionalUrls
 # Process URLs
 $skipUrls = @("*.waconazure.com", "wustat.windows.com", "<yourarcgatewayendpointid>.gw.arc.azure.net")
 
-<<<<<<< HEAD
 foreach ($urlObj in $results) {
     if ($urlObj.URL -eq "time.windows.com") {
         $urlObj.Status, $urlObj.IPAddress = Test-NTPConnectivity -ntpServer $urlObj.URL
@@ -304,130 +278,14 @@ foreach ($urlObj in $results) {
     } else {
         $urlObj.Status, $urlObj.IPAddress = Test-Connectivity -url $urlObj.URL -port $urlObj.Port
     }
-=======
-# Ask for user confirmation
-$confirmation = Read-Host "Does this look correct? (Y/N)"
-if ($confirmation -ne "Y") {
-    Write-Host "Exiting script as per user request."
-    exit
-}
-
-# Function to test NTP using w32tm
-function Test-NtpServer {
-    param (
-        [string]$ntpServer
-    )
-    
-    # Run w32tm command and capture output
-    $w32tmOutput = w32tm /stripchart /computer:$ntpServer /dataonly /samples:1 2>&1
-    
-    # Check for success pattern
-    if ($w32tmOutput -match '^\d{2}:\d{2}:\d{2}, \+\d+\.\d+s') {
-        return "Success"
-    } elseif ($w32tmOutput -match 'error: 0x800705B4') {
-        return "Failed"
-    } else {
-        return "Unknown"
-    }
-}
-
-# Test connectivity for each URL and Port
-foreach ($result in $results) {
-    # Check if the URL is in the known incorrect list
-    if ($knownIncorrectUrls -contains $result.URL) {
-        # Skip and note in the output
-        $result | Add-Member -MemberType NoteProperty -Name Status -Value "Skipped: Known Incorrect URL"
-        continue
-    }
-
-    if ($result.IsWildcard -and $result.Note -eq "Unknown Wildcard URL") {
-        continue # Skip testing for unknown wildcard URLs
-    }
-
-    # Handle specific case for time.windows.com
-    if ($result.URL -eq "time.windows.com") {
-        $status = Test-NtpServer -ntpServer $result.URL
-    } else {
-        # Test only the root domain for wildcard URLs
-        $testUrl = $result.URL
-        $testResult = Test-NetConnection -ComputerName $testUrl -Port $result.Port -WarningAction SilentlyContinue
-        $status = if ($testResult.TcpTestSucceeded) { "Success" } else { "Failed" }
-    }
-
-    # Update the result object with the test status
-    $result | Add-Member -MemberType NoteProperty -Name Status -Value $status
->>>>>>> 883cfc193a8b6e374f487826afa6ea13d8ac5ce4
 }
 
 # Dynamically expand wildcard URLs
 $allUrlsToTest = Expand-WildcardUrlsDynamically -results $results
 
-<<<<<<< HEAD
 # Test manually defined subdomains
 $manualSubdomainTests = Test-ManuallyDefinedSubdomains -wildcardUrls $results
 $allUrlsToTest += $manualSubdomainTests
 
 # Process the final results
 Process-Results -results $allUrlsToTest
-=======
-# Print URLs with Failed or Skipped status
-$failedResults = $results | Where-Object { $_.Status -eq "Failed" }
-$skippedResults = $results | Where-Object { $_.Status -eq "Skipped: Known Incorrect URL" }
-
-if ($failedResults.Count -gt 0) {
-    Write-Host "The following URLs had a status of 'Failed':"
-    $failedResults | Format-Table -Property RowID, URL, Port -AutoSize
-}
-
-if ($skippedResults.Count -gt 0) {
-    Write-Host "The following URLs were skipped as known incorrect URLs:"
-    $skippedResults | Format-Table -Property RowID, URL -AutoSize
-}
-
-# Prompt user to re-test failed URLs with alternate ports
-$retestConfirmation = Read-Host "Would you like to re-test these failed URLs using other common ports? (Y/N)"
-if ($retestConfirmation -eq "Y") {
-    $retestSuccesses = @()
-    foreach ($failed in $failedResults) {
-        $retestResult = $null # Reset for each iteration
-        $status = "Failed" # Default status
-
-        if ($failed.Port -eq 80) {
-            $retestResult = Test-NetConnection -ComputerName $failed.URL -Port 443 -WarningAction SilentlyContinue
-            if ($retestResult.TcpTestSucceeded) {
-                $status = "Success"
-                $failed | Add-Member -MemberType NoteProperty -Name RetestPort -Value 443 -Force
-                $failed | Add-Member -MemberType NoteProperty -Name RetestStatus -Value $status -Force
-            }
-        } elseif ($failed.Port -eq 443) {
-            $retestResult = Test-NetConnection -ComputerName $failed.URL -Port 80 -WarningAction SilentlyContinue
-            if ($retestResult.TcpTestSucceeded) {
-                $status = "Success"
-                $failed | Add-Member -MemberType NoteProperty -Name RetestPort -Value 80 -Force
-                $failed | Add-Member -MemberType NoteProperty -Name RetestStatus -Value $status -Force
-            }
-        }
-
-        # Only collect URLs that actually succeeded
-        if ($status -eq "Success") {
-            $retestSuccesses += $failed
-        }
-    }
-
-    # Display results of the re-test
-    $retestedFailures = $failedResults | Where-Object { $_.RetestStatus -eq "Failed" }
-    if ($retestedFailures.Count -gt 0) {
-        Write-Host "The following URLs still failed after re-testing:"
-        $retestedFailures | Format-Table -Property RowID, URL, RetestPort, RetestStatus -AutoSize
-    }
-
-    if ($retestSuccesses.Count -gt 0) {
-        Write-Host "The following URLs passed after re-testing:"
-        $retestSuccesses | Format-Table -Property RowID, URL, RetestPort, RetestStatus -AutoSize
-    } else {
-        Write-Host "No URLs passed on re-testing."
-    }
-} else {
-    Write-Host "All URLs passed the connectivity test."
-}
->>>>>>> 883cfc193a8b6e374f487826afa6ea13d8ac5ce4

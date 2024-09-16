@@ -1,5 +1,4 @@
 # Deploy Azure Stack HCI Cluster 23H2 using Cloud Based Deployment
-
 <!-- TOC -->
 
 - [Deploy Azure Stack HCI Cluster 23H2 using Cloud Based Deployment](#deploy-azure-stack-hci-cluster-23h2-using-cloud-based-deployment)
@@ -549,8 +548,26 @@ Invoke-Command -ComputerName $servers -ScriptBlock {
 
 ![](./media/edge04.png)
 
+**Step 4** Rename Adapters from "PortX" to "Slot X Port Y"
 
-**Step 4** Configure new admin password on nodes (as Cloud Deployment requires at least 12chars)
+> In latest build all adapter sare renamed to "PortX". If you want original naming scheme, you can use code below.
+
+```PowerShell
+Invoke-Command -ComputerName $Servers -ScriptBlock {
+    $AdaptersHWInfo=Get-NetAdapterHardwareInfo
+    foreach ($Adapter in $AdaptersHWInfo){
+        if ($adapter.Slot){
+            $NewName="Slot $($Adapter.Slot) Port $($Adapter.Function +1)"
+        }else{
+            $NewName="NIC$($Adapter.Function +1)"
+        }
+        $adapter | Rename-NetAdapter -NewName $NewName
+    }
+} -Credential $Credentials
+
+```
+
+**Step 5** Configure new admin password on nodes (as Cloud Deployment requires at least 12chars)
 
 ```PowerShell
 #change password of local admin to be at least 12 chars
@@ -560,7 +577,7 @@ Invoke-Command -ComputerName $servers -ScriptBlock {
  
 ```
 
-**Step 5** Optional - configure iDRAC IP adresses and make sure passthrough interface is enabled
+**Step 6** Optional - configure iDRAC IP adresses and make sure passthrough interface is enabled
 
 ```PowerShell
 #$iDRACCredentials=Get-Credential #grab iDRAC credentials

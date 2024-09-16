@@ -30,6 +30,7 @@ Guides focused at deploying and operation of Azure Stack HCI Clusters
 * [04 Fix AKS Versions](tips&tricks/04-FixAKSVersions/)
 * [05 Fix Azure Stack HCI Extensions](tips&tricks/05-FixExtensions/)
 * [06 Test Known URLs](tips&tricks/06-TestKnownURLs/)
+* [07 Update Servers](tips&tricks/07-UpdateServers/)
 
 ## Deprecated labs
 

@@ -11,7 +11,8 @@
     - [Restart Physical servers to attempt boot and collect information from logs](#restart-physical-servers-to-attempt-boot-and-collect-information-from-logs)
         - [Expected result](#expected-result)
         - [Expected result](#expected-result)
-    - [Configure MDT Database and Active Directory Object](#configure-mdt-database-and-active-directory-object)
+    - [Configure WDS to answer all clients](#configure-wds-to-answer-all-clients)
+    - [Configure MDT Database](#configure-mdt-database)
         - [Expected result](#expected-result)
     - [Restart Servers to Install Operating system](#restart-servers-to-install-operating-system)
         - [Expected result](#expected-result)
@@ -37,6 +38,8 @@
 ![](./media/topology01.png)
 
 ![](./media/topology02.png)
+
+> Windows Server 2025 as WDS server won't work as machines refuse pxe boot from it. Simply use Windows Server 2022 instead ![](./media/pxeerror01.png)
 
 ## Deploy MSLab VMs
 

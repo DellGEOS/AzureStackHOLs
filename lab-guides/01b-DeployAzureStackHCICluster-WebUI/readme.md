@@ -1,5 +1,4 @@
 # Azure Stack HCI Light Touch Provisioning and Arc Gateway
-
 <!-- TOC -->
 
 - [Azure Stack HCI Light Touch Provisioning and Arc Gateway](#azure-stack-hci-light-touch-provisioning-and-arc-gateway)
@@ -9,15 +8,13 @@
     - [NTP Prerequisite Virtual Lab](#ntp-prerequisite-virtual-lab)
     - [The Lab](#the-lab)
         - [WebUI Prerequisites](#webui-prerequisites)
+        - [Fixing Network Adapters name real systems only](#fixing-network-adapters-name-real-systems-only)
+        - [WEBUI](#webui)
         - [Validation Prerequisites](#validation-prerequisites)
         - [Configure iDRACs optional](#configure-idracs-optional)
         - [Deploy Azure Stack from Azure Portal](#deploy-azure-stack-from-azure-portal)
 
 <!-- /TOC -->
-## About the lab
-
-[Light touch provisioning (preview)](https://learn.microsoft.com/en-us/azure-stack/hci/deploy/deployment-arc-register-local-ui) allows you to use local web UI on Azure Stack HCI to onboard Azure Stack HCI nodes to Azure Portal.
-
 This process greatly simplifies the process, but still several steps are needed. The OS will automatically use SN of the server and will use it as a hostname. If you are on the same network, you can simply navigate to https://`<device-serial-number>`.local (it uses local discovery).
 
 ## Prerequisites
@@ -137,6 +134,41 @@ Write-Host -ForegroundColor Cyan @"
 
 ![](./media/powershell01.png)
 
+### Fixing Network Adapters name (real systems only)
+
+Latest Azure Stack HCI version modified the NIC naming scheme and all adapters are named with names Port0-PortX as you see on screenshots below
+
+![](./media/powershell02.png)
+
+```PowerShell
+$Servers="LTPNode1","LTPNode2"
+$UserName="Administrator"
+$Password="LS1setup!"
+$SecuredPassword = ConvertTo-SecureString $password -AsPlainText -Force
+$Credentials= New-Object System.Management.Automation.PSCredential ($UserName,$SecuredPassword)
+
+#configure trusted hosts to be able to communicate with servers (not secure as you send credentials over to remote host)
+$TrustedHosts=@()
+$TrustedHosts+=$Servers
+Set-Item WSMan:\localhost\Client\TrustedHosts -Value $($TrustedHosts -join ',') -Force
+
+Invoke-Command -ComputerName $Servers -ScriptBlock {
+    $AdaptersHWInfo=Get-NetAdapterHardwareInfo
+    foreach ($Adapter in $AdaptersHWInfo){
+        if ($adapter.Slot){
+            $NewName="Slot $($Adapter.Slot) Port $($Adapter.Function +1)"
+        }else{
+            $NewName="NIC$($Adapter.Function +1)"
+        }
+        $adapter | Rename-NetAdapter -NewName $NewName
+    }
+} -Credential $Credentials
+ 
+```
+
+![](./media/powershell03.png)
+
+### WEBUI
 
 As you now have all variables needed, you can proceed with navigating to WebUI on each node.
 

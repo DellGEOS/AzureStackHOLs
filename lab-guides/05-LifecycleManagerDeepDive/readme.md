@@ -17,6 +17,8 @@ In this lab you will learn about SBE packages and how to sideload them using Azu
 
 ## SBE Packages
 
+SBE package is a package provided by OEM to consistently update Azure Stack HCI solutions.
+
 **Minimal**
     Package, that contains only WDAC Policy. OEM can select the minimal level and keep using WAC Extension to update Azure Stack HCI Nodes (HPE).
 
@@ -62,6 +64,7 @@ Get-SolutionDiscoveryDiagnosticInfo | Format-List
 
 ![](./media/powershell03.png)
 
+
 As you can see, there is Solution and SBE manifest
 
     Solution    https://aka.ms/AzureEdgeUpdates
@@ -83,10 +86,17 @@ Download and copy to Azure Stack HCI cluster
 
 ```PowerShell
 #download SBE
+$ProgressPreference="SilentlyContinue" #Just to make download faster
 Invoke-WebRequest -Uri https://dl.dell.com/protected/drivers/FOLDER11833185M/1/Bundle_SBE_Dell_AS-HCI-AX_4.1.2406.3001.zip -OutFile $env:userprofile\Downloads\Bundle_SBE_Dell_AS-HCI-AX_4.1.2406.3001.zip -UserAgent "DellGEOS"
+
+$ProgressPreference="Continue" #Just to revert it back to default
 
 #expand archive
 Expand-Archive -Path $env:userprofile\Downloads\Bundle_SBE_Dell_AS-HCI-AX_4.1.2406.3001.zip -DestinationPath $env:userprofile\Downloads\SBE
+
+#replace metadata file with latest metadata from SBEUpdate address
+Invoke-WebRequest -Uri https://aka.ms/AzureStackSBEUpdate/DellEMC -OutFIle $env:userprofile\Downloads\SBE\SBE_Discovery_Dell.xml
+
 
 #transfer into the cluster
 New-Item -Path "\\$ClusterName\ClusterStorage$\Infrastructure_1\Shares\SU1_Infrastructure_1" -Name sideload -ItemType Directory -ErrorAction Ignore
@@ -105,6 +115,10 @@ Invoke-Command -ComputerName $ClusterName -ScriptBlock {
 ```
 
 ![](./media/powershell04.png)
+
+Note: after executiong Add-Solution update, package is transfered into C:\ClusterStorage\Infrastructure_1\Shares\SU1_Infrastructure_1\Updates\Packages. To remove it, you can simply delete package from packages folder as there's no "Remove-SolutinUpdate" command
+
+![](./media/explorer01.png)
 
 
 Let's check all details versions
@@ -144,7 +158,7 @@ Invoke-Command -ComputerName $ClusterName -ScriptBlock {
 Note: if this is the first time and you run it from powershell, you might need to add CAU role to your cluster
 
 ```PowerShell
-    if (-not (Get-CAUClusterRole -ClusterName $ClusterName)){
+    if (-not (Get-CAUClusterRole -ClusterName $ClusterName -ErrorAction Ignore)){
         Add-CauClusterRole -ClusterName $ClusterName -MaxFailedNodes 0 -RequireAllNodesOnline -EnableFirewallRules -GroupName "$ClusterName-CAU" -VirtualComputerObjectName "$ClusterName-CAU" -Force -CauPluginName Microsoft.WindowsUpdatePlugin -MaxRetriesPerNode 3 -CauPluginArguments @{ 'IncludeRecommendedUpdates' = 'False' } -StartDate "3/2/2017 3:00:00 AM" -DaysOfWeek 4 -WeeksOfMonth @(3) -verbose
     #disable self-updating
         Disable-CauClusterRole -ClusterName $ClusterName -Force
@@ -188,6 +202,5 @@ Invoke-Command -ComputerName $ClusterName -ScriptBlock {
 }
  
 ```
-
 
 ![](./media/powershell09.png)

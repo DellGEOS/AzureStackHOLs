@@ -192,15 +192,8 @@ if (-not (Get-AzContext)){
     Connect-AzAccount -UseDeviceAuthentication
 }
 
-#select subscription if more available
-    $subscriptions=Get-AzSubscription
-    if (($subscriptions).count -gt 1){
-        $SubscriptionID=($Subscriptions | Out-GridView -OutputMode Single -Title "Please Select Subscription").ID
-        $Subscriptions | Where-Object ID -eq $SubscriptionID | Select-AzSubscription
-    }else{
-        $SubscriptionID=$subscriptions.id
-    }
- 
+#select subscription
+#$SubscriptionID=(Get-AzContext).subscription.id
 
 #define variables
 

@@ -32,6 +32,7 @@ Guides focused at deploying and operation of Azure Stack HCI Clusters
 * [06 Test Known URLs](tips&tricks/06-TestKnownURLs/)
 * [07 Update Servers](tips&tricks/07-UpdateServers/)
 * [08 Download Dell Drivers for offline use](tips&tricks/08-DellSystemUpdateOffline/)
+* [09 Pulling image from Azure](tips&tricks/09-PullingImageFromAzure/)
 
 ## Deprecated labs
 

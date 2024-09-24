@@ -141,6 +141,11 @@ foreach ($Node in $Servers){
 }
 
 #download updates from compliance scan
+    #optionally you can select what updates to download
+    #$Compliance = $Compliance | Out-GridView -OutputMode Multiple -Title "Please select what updates to download"
+    #or filter to non-compliant updates only
+    #$DellUpdatesList=($Compliance | Where-Object ComplianceStatus -eq $False | Group-Object PackageFilePath | ForEach-Object {$_.Group | Select-Object PackageFilePath -First 1}).PackageFilePath
+
     $DellUpdatesList=($Compliance | Group-Object PackageFilePath | ForEach-Object {$_.Group | Select-Object PackageFilePath -First 1}).PackageFilePath
     foreach ($Update in $DellUpdatesList){
         #create destination folder

@@ -1,8 +1,21 @@
+# Download Dell Drivers for offline use
+
+<!-- TOC -->
+
+- [Download Dell Drivers for offline use](#download-dell-drivers-for-offline-use)
+    - [About the lab](#about-the-lab)
+    - [Download catalog and necessary files DSU and IC](#download-catalog-and-necessary-files-dsu-and-ic)
+    - [Download updates that are listed in catalog](#download-updates-that-are-listed-in-catalog)
+    - [Or download updates that are found on remote system](#or-download-updates-that-are-found-on-remote-system)
+    - [Apply updates on remote system](#apply-updates-on-remote-system)
+
+<!-- /TOC -->
+
+## About the lab
 
 The following code is useful as it will download updates you might need for offline patching your servers.
 
 It might be useful if you use MDT to provision your servers. You can then simply run DSU to install all updates and point it to the folder. Otherwise you can just use SBE package that you can sideload on cluster.
-
 
 ## Download catalog and necessary files (DSU and IC)
 

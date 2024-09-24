@@ -1,15 +1,14 @@
 # Azure Stack HCI Hands-on-lab guides
 
-## Admin Guides
+<!-- TOC -->
 
-Guides focused at how to deploy and operate labs
+- [Azure Stack HCI Hands-on-lab guides](#azure-stack-hci-hands-on-lab-guides)
+    - [Admin Guides](#admin-guides)
+    - [Lab guides](#lab-guides)
+    - [Tips & Tricks](#tips--tricks)
+    - [Deprecated labs](#deprecated-labs)
 
-* [01 How to Hydrate MSLab files](admin-guides/01-HydrateMSLab/)
-* [02 Working with MSLab](admin-guides/02-WorkingWithMSLab/)
-* [03 Deploy Physical Servers with MSLab](admin-guides/03-DeployPhysicalServersWithMSLab/)
-* [04 How to Hydrate MSLab files with SCVMM](admin-guides/04-HydrateMSLab%2BSCVMM/)
-* [05 Network Configuration](admin-guides/05-NetworkConfiguration/)
-* [06 How to Create Windows Server Insider VHD](admin-guides/06-HowToCreateWindowsServerInsiderVHD/)
+<!-- /TOC -->Create Windows Server Insider VHD](admin-guides/06-HowToCreateWindowsServerInsiderVHD/)
 
 ## Lab guides
 
@@ -31,6 +30,7 @@ Guides focused at deploying and operation of Azure Stack HCI Clusters
 * [05 Fix Azure Stack HCI Extensions](tips&tricks/05-FixExtensions/)
 * [06 Test Known URLs](tips&tricks/06-TestKnownURLs/)
 * [07 Update Servers](tips&tricks/07-UpdateServers/)
+* [08 Download Dell Drivers for offline use](tips&tricks/08-DellSystemUpdateOffline/)
 
 ## Deprecated labs
 

@@ -8,7 +8,8 @@
     - [Tips & Tricks](#tips--tricks)
     - [Deprecated labs](#deprecated-labs)
 
-<!-- /TOC -->Create Windows Server Insider VHD](admin-guides/06-HowToCreateWindowsServerInsiderVHD/)
+<!-- /TOC -->
+* [06 How to Create Windows Server Insider VHD](admin-guides/06-HowToCreateWindowsServerInsiderVHD/)
 
 ## Lab guides
 

@@ -456,12 +456,12 @@ Invoke-Command -ComputerName $Servers -ScriptBlock {
 
 #make sure az.accounts module is installed on nodes
 Invoke-Command -ComputerName $Servers -ScriptBlock {
-    Install-Module -Name az.accounts -RequiredVersion 2.13.2 -Force
+    Install-Module -Name az.accounts -RequiredVersion 3.0.0 -Force
 } -Credential $Credentials
 
 #make sure az.accounts module is installed on nodes
 Invoke-Command -ComputerName $Servers -ScriptBlock {
-    Install-Module -Name Az.ConnectedMachine -RequiredVersion 0.5.2 -Force
+    Install-Module -Name Az.ConnectedMachine -RequiredVersion 0.8.0 -Force
 } -Credential $Credentials
 
 ```

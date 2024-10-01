@@ -1,8 +1,8 @@
 # Azure Stack HCI Light Touch Provisioning and Arc Gateway
 <!-- TOC -->
+<!-- TOC -->
 
 - [Azure Stack HCI Light Touch Provisioning and Arc Gateway](#azure-stack-hci-light-touch-provisioning-and-arc-gateway)
-    - [About the lab](#about-the-lab)
     - [Prerequisites](#prerequisites)
     - [LabConfig](#labconfig)
     - [NTP Prerequisite Virtual Lab](#ntp-prerequisite-virtual-lab)
@@ -10,6 +10,11 @@
         - [WebUI Prerequisites](#webui-prerequisites)
         - [Fixing Network Adapters name real systems only](#fixing-network-adapters-name-real-systems-only)
         - [WEBUI](#webui)
+        - [Validation Prerequisites](#validation-prerequisites)
+        - [Configure iDRACs optional](#configure-idracs-optional)
+        - [Deploy Azure Stack from Azure Portal](#deploy-azure-stack-from-azure-portal)
+
+<!-- /TOC -->BUI](#webui)
         - [Validation Prerequisites](#validation-prerequisites)
         - [Configure iDRACs optional](#configure-idracs-optional)
         - [Deploy Azure Stack from Azure Portal](#deploy-azure-stack-from-azure-portal)
@@ -332,21 +337,25 @@ Set-Item WSMan:\localhost\Client\TrustedHosts -Value $($TrustedHosts -join ',') 
 #endregion
 
 #region populate SBE package
-    #download package to Downloads
-    Invoke-WebRequest -Uri https://dl.dell.com/protected/drivers/FOLDER11833185M/1/Bundle_SBE_Dell_AS-HCI-AX_4.1.2406.3001.zip -OutFile $env:userprofile\Downloads\Bundle_SBE_Dell_AS-HCI-AX_4.1.2406.3001.zip -UserAgent "DellGEOS"
+    #download SBE
+    Start-BitsTransfer -Source https://dl.dell.com/FOLDER12137689M/1/Bundle_SBE_Dell_AS-HCI-AX-15G_4.1.2409.1901.zip -Destination $env:userprofile\Downloads\Bundle_SBE_Dell_AS-HCI-AX-15G_4.1.2409.1901.zip
+
+    #or 16G
+    #Start-BitsTransfer -Source https://dl.dell.com/FOLDER12137723M/1/Bundle_SBE_Dell_AS-HCI-AX-16G_4.1.2409.1501.zip -Destination $env:userprofile\Downloads\Bundle_SBE_Dell_AS-HCI-AX-16G_4.1.2409.1501.zip
+
     #Transfer to servers
     $Sessions=New-PSSession -ComputerName $Servers -Credential $Credentials
     foreach ($Session in $Session){
-        Copy-Item -Path $env:userprofile\Downloads\Bundle_SBE_Dell_AS-HCI-AX_4.1.2406.3001.zip -Destination c:\users\$UserName\downloads\ -ToSession $Session
+        Copy-Item -Path $env:userprofile\Downloads\Bundle_SBE_Dell_AS-HCI-AX-15G_4.1.2409.1901.zip -Destination c:\users\$UserName\downloads\ -ToSession $Session
     }
 
     Invoke-Command -ComputerName $Servers -scriptblock {
-        #Invoke-WebRequest -Uri https://dl.dell.com/protected/drivers/FOLDER11833185M/1/Bundle_SBE_Dell_AS-HCI-AX_4.1.2406.3001.zip -OutFile $env:userprofile\Downloads\Bundle_SBE_Dell_AS-HCI-AX_4.1.2406.3001.zip -UserAgent "DellGEOS"
+        #Start-BitsTransfer -Source https://dl.dell.com/FOLDER12137689M/1/Bundle_SBE_Dell_AS-HCI-AX-15G_4.1.2409.1901.zip -Destination $env:userprofile\Downloads\Bundle_SBE_Dell_AS-HCI-AX-15G_4.1.2409.1901.zip
         #unzip to c:\SBE
         New-Item -Path c:\ -Name SBE -ItemType Directory -ErrorAction Ignore
-        Expand-Archive -LiteralPath $env:userprofile\Downloads\Bundle_SBE_Dell_AS-HCI-AX_4.1.2406.3001.zip -DestinationPath C:\SBE
+        Expand-Archive -LiteralPath $env:userprofile\Downloads\Bundle_SBE_Dell_AS-HCI-AX-15G_4.1.2409.1901.zip -DestinationPath C:\SBE
     } -Credential $Credentials
- 
+
     $Sessions | Remove-PSSession
 #endregion
 

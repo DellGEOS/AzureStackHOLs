@@ -1,6 +1,5 @@
 # Azure Stack HCI Light Touch Provisioning and Arc Gateway
 <!-- TOC -->
-<!-- TOC -->
 
 - [Azure Stack HCI Light Touch Provisioning and Arc Gateway](#azure-stack-hci-light-touch-provisioning-and-arc-gateway)
     - [Prerequisites](#prerequisites)
@@ -14,13 +13,9 @@
         - [Configure iDRACs optional](#configure-idracs-optional)
         - [Deploy Azure Stack from Azure Portal](#deploy-azure-stack-from-azure-portal)
 
-<!-- /TOC -->BUI](#webui)
-        - [Validation Prerequisites](#validation-prerequisites)
-        - [Configure iDRACs optional](#configure-idracs-optional)
-        - [Deploy Azure Stack from Azure Portal](#deploy-azure-stack-from-azure-portal)
-
 <!-- /TOC -->
-This process greatly simplifies the process, but still several steps are needed. The OS will automatically use SN of the server and will use it as a hostname. If you are on the same network, you can simply navigate to https://`<device-serial-number>`.local (it uses local discovery).
+
+This process greatly simplifies the deployment, but still several steps are needed. The OS will automatically use SN of the server and will use it as a hostname. If you are on the same network, you can simply navigate to https://`<device-serial-number>`.local (it uses local discovery).
 
 ## Prerequisites
 

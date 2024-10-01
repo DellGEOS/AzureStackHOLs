@@ -1,5 +1,4 @@
 # Azure Stack HCI 23H2 Lifecycle Manager Deep Dive
-
 <!-- TOC -->
 
 - [Azure Stack HCI 23H2 Lifecycle Manager Deep Dive](#azure-stack-hci-23h2-lifecycle-manager-deep-dive)
@@ -8,6 +7,7 @@
     - [Getting into Azure Stack PowerShell modules](#getting-into-azure-stack-powershell-modules)
     - [Sideload SBE package](#sideload-sbe-package)
     - [Check versions and status](#check-versions-and-status)
+- [Deleting failed Action Plans](#deleting-failed-action-plans)
 
 <!-- /TOC -->
 
@@ -204,3 +204,31 @@ Invoke-Command -ComputerName $ClusterName -ScriptBlock {
 ```
 
 ![](./media/powershell09.png)
+
+
+# Deleting failed Action Plans
+
+When update is stuck in GUI and won't let you attempt another run, following code might help you. It will delete failed action plans
+
+```PowerShell
+$ClusterName="AXClus02"
+
+Invoke-Command -ComputerName $ClusterName -ScriptBlock {
+    $FailedSolutionUpdates=Get-SolutionUpdate | Where-Object State -eq InstallationFailed
+    foreach ($FailedSolutionUpdate in $FailedSolutionUpdates){
+        $RunResourceIDs=(Get-SolutionUpdate -ID $FailedSolutionUpdate.ResourceID | Get-SolutionUpdateRun).ResourceID
+
+        #Create ececlient
+        $eceClient=Create-ECEClientSimple
+        #create description object
+        $description=New-Object Microsoft.AzureStack.Solution.Deploy.EnterpriseCloudEngine.Controllers.Models.DeleteActionPlanInstanceDescription
+
+        #Let's delete it
+        foreach ($RunResourceID in $RunResourceIDs){
+            $ActionPlanInstanceID=$RunResourceID.Split("/") | Select-Object -Last 1
+            $description.ActionPlanInstanceID=$ActionPlanInstanceID
+            $eceClient.DeleteActionPlanInstance($description)
+        }
+    }
+
+```

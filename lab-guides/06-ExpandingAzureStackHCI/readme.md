@@ -18,6 +18,8 @@ You can simply follow [Cloud-based deployment HOL](https://github.com/DellGEOS/A
 
 [Official documentation](https://learn.microsoft.com/en-us/azure-stack/hci/manage/add-server)
 
+I performed steps on AX nodes (physical servers), but code snippets are kept with virtual lab variables.
+
 ## Prepare server
 
 Following code is more or less same as in cloud-based deployment HOL. I kept it almost the same, I just commented out all sections that are not needed when adding node
@@ -25,6 +27,8 @@ Following code is more or less same as in cloud-based deployment HOL. I kept it 
 You can copy code into PowerShellISE or Visual Studio Code and collapse all regions (in PSISE it's ctrl+m)
 
 ![](./media/vscode01.png)
+
+Note: as you can see, it also contains step to populate SBE package and step to update drivers. In virtual environment you should skip these steps.
 
 ```PowerShell
 #region Variables

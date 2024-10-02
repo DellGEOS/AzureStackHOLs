@@ -2,15 +2,15 @@
 
 <!-- TOC -->
 
-<!-- TOC -->
-
 - [Expanding Azure Stack HCI](#expanding-azure-stack-hci)
     - [About the lab](#about-the-lab)
     - [Prepare server](#prepare-server)
     - [Add server](#add-server)
     - [Synchronize changes with Azure](#synchronize-changes-with-azure)
 
-<!-- /TOC -->lab
+<!-- /TOC -->
+
+## About the lab
 
 In this Hands-on lab you will expand one-node solution to two nodes. Just to illustrate rebuilding volumes, adding witness and more.
 
@@ -37,7 +37,7 @@ You can copy code into PowerShellISE or Visual Studio Code and collapse all regi
     $ResourceGroupName="ASClus01-RG"
     $Location="eastus"
 
-    $Servers="ASNode3"
+    $Servers="ASNode2"
     $ResourceGroupName="ASClus01-RG"
 
     $Cloud="AzureCloud"
@@ -366,10 +366,10 @@ Invoke-Command -ComputerName $Servers -ScriptBlock {
 
 ```PowerShell
 
-$ClusterName="AXClus02"
+$ClusterName="ASClus01"
 
-$Hostname="AXNode4"
-$HostIPv4="10.0.0.104"
+$Hostname="ASNode2"
+$HostIPv4="10.0.0.12"
 $Username="Administrator"
 $Password="LS1setup!LS1setup!"
 
@@ -393,8 +393,8 @@ Since I was updating from one node to 2 nodes, there was no witness configured a
 Let's configure witness first
 
 ```PowerShell
-    $ClusterName="AXClus02"
-    $ResourceGroupName="AXClus02-RG"
+    $ClusterName="ASClus01"
+    $ResourceGroupName="ASClus01-RG"
     $Location="eastus"
 
     #generate name with random number

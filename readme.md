@@ -21,6 +21,7 @@ Guides focused at deploying and operation of Azure Stack HCI Clusters
 * [03 Testing Windows Server 2025 Insider Preview](lab-guides/03-TestingWindowsServerInsider/)
 * [04 Testing Logical Networks in Azure Stack HCI 23H2](lab-guides/04-TestingLogicalNetworks/)
 * [05 Azure Stack HCI 23H2 Lifecycle Manager Deep Dive](lab-guides/05-LifecycleManagerDeepDive/)
+* [06 Expanding Azure Stack HCI](lab-guides/06-ExpandingAzureStackHCI/)
 
 ## Tips & Tricks
 

@@ -195,7 +195,6 @@ Or check in portal
 
 ## Check versions and status
 
-
 ```PowerShell
 Invoke-Command -ComputerName $ClusterName -ScriptBlock {
     Get-SolutionUpdateEnvironment | Select Current*,*State,Package*

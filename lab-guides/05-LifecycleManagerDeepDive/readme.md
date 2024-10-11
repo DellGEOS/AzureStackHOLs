@@ -271,7 +271,7 @@ $Progress.Action.Steps.Step | Format-Table -AutoSize
 
 ![](./media/powershell13.png)
 
-Or you can simply select action plan you want
+Or you can simply select action plan you want (in this case I selected Action Plan for adding node - Scale-Out operation)
 
 ```PowerShell
 [xml]$Progress=($ActionPlans | Out-GridView -OutputMode Single -Title "Please Select Action plan you want to explore").ProgressAsXml
@@ -283,13 +283,16 @@ $Progress.Action.Steps.Step | Format-Table -AutoSize
 
 ![](./media/powershell14.png)
 
+![](./media/powershell15.png)
+
+
 # Deleting failed Action Plans
 
 When update is stuck in GUI and won't let you attempt another run, it's important for Microsoft understand what happened.
 
 This operation should only be performed for development clusters (such as a lab environment) for getting familiar with Azure stack HCI where it is a considered reasonable to redeploy the cluster in the event a cluster issue is observed. 
 
-Microsoft recommends contacting support for issues related to failed updates if the issue cannot be resolved through retries or other remediation.  Proceed at your own risk.
+Microsoft recommends contacting support for issues related to failed updates if the issue cannot be resolved through retries or other remediation. **Proceed at your own risk.**
 
 **WARNING:  Deleting action plan instances:**
 1.	**Abandons the update at the point of failure. This can leave the cluster in an inconsistent state.**

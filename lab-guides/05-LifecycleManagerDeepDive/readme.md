@@ -299,6 +299,8 @@ Microsoft recommends contacting support for issues related to failed updates if 
 2.	**Deletes history of the action plan execution (meaning you are deleting the best record of how the cluster got into the inconsistent state).**
 3.	**Prevents Microsoft support from being able to use telemetry to pinpoint the history of events on the cluster should you require assistance to repair your cluster.**
 
+Following code has the deletion itself commented out, to just make sure you understand above.
+
 ```PowerShell
 $ClusterName="AXClus02"
 
@@ -316,8 +318,9 @@ Invoke-Command -ComputerName $ClusterName -ScriptBlock {
         foreach ($RunResourceID in $RunResourceIDs){
             $ActionPlanInstanceID=$RunResourceID.Split("/") | Select-Object -Last 1
             $description.ActionPlanInstanceID=$ActionPlanInstanceID
-            $eceClient.DeleteActionPlanInstance($description)
+            #uncomment - so you understand you know what you are doing, and understand you might get into unsupported state
+            #$eceClient.DeleteActionPlanInstance($description)
         }
     }
-
+}
 ```

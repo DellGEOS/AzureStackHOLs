@@ -7,6 +7,10 @@
     - [Getting into Azure Stack PowerShell modules](#getting-into-azure-stack-powershell-modules)
     - [Sideload SBE package](#sideload-sbe-package)
     - [Check versions and status](#check-versions-and-status)
+- [Exploring Enterprise Cloud Engine Client](#exploring-enterprise-cloud-engine-client)
+    - [Exploring available actions](#exploring-available-actions)
+    - [Display cluster information](#display-cluster-information)
+    - [Explore Action Plans](#explore-action-plans)
 - [Deleting failed Action Plans](#deleting-failed-action-plans)
 
 <!-- /TOC -->

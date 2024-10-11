@@ -7,7 +7,7 @@
     - [Getting into Azure Stack PowerShell modules](#getting-into-azure-stack-powershell-modules)
     - [Sideload SBE package](#sideload-sbe-package)
     - [Check versions and status](#check-versions-and-status)
-- [Exploring Enterprise Cloud Engine Client](#exploring-enterprise-cloud-engine-client)
+- [Exploring Enterprise Cloud Engine ECE Client](#exploring-enterprise-cloud-engine-ece-client)
     - [Exploring available actions](#exploring-available-actions)
     - [Display cluster information](#display-cluster-information)
     - [Explore Action Plans](#explore-action-plans)
@@ -101,7 +101,6 @@ Expand-Archive -Path $env:userprofile\Downloads\Bundle_SBE_Dell_AS-HCI-AX-15G_4.
 #(optional) replace metadata file with latest metadata from SBEUpdate address
 #Invoke-WebRequest -Uri https://aka.ms/AzureStackSBEUpdate/DellEMC -OutFIle $env:userprofile\Downloads\SBE\SBE_Discovery_Dell.xml
 
-
 #transfer into the cluster
 New-Item -Path "\\$ClusterName\ClusterStorage$\Infrastructure_1\Shares\SU1_Infrastructure_1" -Name sideload -ItemType Directory -ErrorAction Ignore
 Copy-Item -Path $env:userprofile\Downloads\SBE\*.* -Destination "\\$ClusterName\ClusterStorage$\Infrastructure_1\Shares\SU1_Infrastructure_1\sideload"
@@ -124,7 +123,6 @@ Note: after executiong Add-Solution update, package is transfered into C:\Cluste
 
 ![](./media/explorer01.png)
 
-
 Let's check all details versions
 
 ```PowerShell
@@ -145,7 +143,6 @@ Invoke-Command -ComputerName $ClusterName -ScriptBlock {
 } | Out-Gridview
  
 ```
-
 
 ![](./media/powershell07.png)
 
@@ -171,7 +168,6 @@ Note: if this is the first time and you run it from powershell, you might need t
 ```
 
 To check status you can run following code
-
 
 ```PowerShell
 Invoke-Command -ComputerName $ClusterName -ScriptBlock {
@@ -209,9 +205,9 @@ Invoke-Command -ComputerName $ClusterName -ScriptBlock {
 
 ![](./media/powershell09.png)
 
-# Exploring Enterprise Cloud Engine Client
+# Exploring Enterprise Cloud Engine (ECE) Client
 
-ECE is software orchestration engine called the Enterprise Cloud Engine. It installs and configure Azure Stack HCI fabric infrastructure on all Azure Stack HCI scale unit servers. This includes actions like installing updates or adding cluster node. Sounds familiar? Yes, this component comes from Azure Stack HUB.
+ECE installs and configure Azure Stack HCI fabric infrastructure on all Azure Stack HCI scale unit servers. This includes actions like installing updates or adding cluster node. Sounds familiar? Yes, this component comes from Azure Stack HUB.
 
 ## Exploring available actions
 
@@ -232,7 +228,7 @@ Invoke-Command -ComputerName $ClusterName -ScriptBlock {
 
 You can simply run Get-StampInformation to learn more about Azure Stack HCI cluster
 
-This is helpful as you can collect information about all versions (OEMVersion,StampVersion,ServicesVersion...)
+This is helpful as you can collect information about all versions (OEMVersion,StampVersion,ServicesVersion...) from cluster or multiple clusters.
 
 ```PowerShell
 Invoke-Command -ComputerName $ClusterName -ScriptBlock {
@@ -246,6 +242,8 @@ Invoke-Command -ComputerName $ClusterName -ScriptBlock {
 
 ## Explore Action Plans
 
+Action plans is a task that was created by ECE to perform maintenance tasks. You can explore history of the execution by querying action plan instances. 
+
 ```PowerShell
 $ActionPlans=Invoke-Command -ComputerName $ClusterName -ScriptBlock {
     Get-ActionPlanInstances
@@ -257,9 +255,9 @@ $ActionPlans | Select-Object InstanceID,Action*,Status,StartDateTime,EndDateTime
 
 ![](./media/powershell12.png)
 
-As you can see, I simply updated stamp (ActionPlanName MAS Update) and added a node (ScaleOutOperation)
+As you can see, I simply updated stamp in the past (ActionPlanName MAS Update) and added a node (ScaleOutOperation) (see [Expanding Azure Stack HCI Lab](https://github.com/DellGEOS/AzureStackHOLs/tree/main/lab-guides/06-ExpandingAzureStackHCI))
 
-Let's take a look at what last Action MAS Update did
+Let's take a look at what last action MAS Update did
 
 ```PowerShell
 [xml]$Progress=($ActionPlans | Where-Object ActionPlanName -eq "MAS Update" | Sort-Object -Property LastModifiedDateTime | Select-Object -Last 1).ProgressAsXml
@@ -271,7 +269,7 @@ $Progress.Action.Steps.Step | Format-Table -AutoSize
 
 ![](./media/powershell13.png)
 
-Or you can simply select action plan you want (in this case I selected Action Plan for adding node - Scale-Out operation)
+Or you can simply select action plan you want (in this case I selected Action Plan for adding node - ScaleOutOperation)
 
 ```PowerShell
 [xml]$Progress=($ActionPlans | Out-GridView -OutputMode Single -Title "Please Select Action plan you want to explore").ProgressAsXml
@@ -289,7 +287,6 @@ $Progress.Action.Steps.Step | Format-Table -AutoSize
 # Deleting failed Action Plans
 
 When update is stuck in GUI and won't let you attempt another run, it's important for Microsoft understand what happened.
-
 This operation should only be performed for development clusters (such as a lab environment) for getting familiar with Azure stack HCI where it is a considered reasonable to redeploy the cluster in the event a cluster issue is observed. 
 
 Microsoft recommends contacting support for issues related to failed updates if the issue cannot be resolved through retries or other remediation. **Proceed at your own risk.**

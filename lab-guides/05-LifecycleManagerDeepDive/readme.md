@@ -205,10 +205,92 @@ Invoke-Command -ComputerName $ClusterName -ScriptBlock {
 
 ![](./media/powershell09.png)
 
+# Exploring Enterprise Cloud Engine Client
+
+ECE is software orchestration engine called the Enterprise Cloud Engine. It installs and configure Azure Stack HCI fabric infrastructure on all Azure Stack HCI scale unit servers. This includes actions like installing updates or adding cluster node. Sounds familiar? Yes, this component comes from Azure Stack HUB.
+
+## Exploring available actions
+
+```PowerShell
+$ClusterName="AXClus02"
+
+#Grab all available commands in ECE PowerShell module
+Invoke-Command -ComputerName $ClusterName -ScriptBlock {
+    Get-Command -Module ECEClient
+}
+
+```
+
+![](./media/powershell10.png)
+
+
+## Display cluster information
+
+You can simply run Get-StampInformation to learn more about Azure Stack HCI cluster
+
+This is helpful as you can collect information about all versions (OEMVersion,StampVersion,ServicesVersion...)
+
+```PowerShell
+Invoke-Command -ComputerName $ClusterName -ScriptBlock {
+    Get-StampInformation
+}
+
+```
+
+![](./media/powershell11.png)
+
+
+## Explore Action Plans
+
+```PowerShell
+$ActionPlans=Invoke-Command -ComputerName $ClusterName -ScriptBlock {
+    Get-ActionPlanInstances
+}
+
+$ActionPlans | Select-Object InstanceID,Action*,Status,StartDateTime,EndDateTime | Format-Table -AutoSize
+ 
+```
+
+![](./media/powershell12.png)
+
+As you can see, I simply updated stamp (ActionPlanName MAS Update) and added a node (ScaleOutOperation)
+
+Let's take a look at what last Action MAS Update did
+
+```PowerShell
+[xml]$Progress=($ActionPlans | Where-Object ActionPlanName -eq "MAS Update" | Sort-Object -Property LastModifiedDateTime | Select-Object -Last 1).ProgressAsXml
+
+$Progress.Action
+$Progress.Action.Steps.Step | Format-Table -AutoSize
+ 
+```
+
+![](./media/powershell13.png)
+
+Or you can simply select action plan you want
+
+```PowerShell
+[xml]$Progress=($ActionPlans | Out-GridView -OutputMode Single -Title "Please Select Action plan you want to explore").ProgressAsXml
+
+$Progress.Action
+$Progress.Action.Steps.Step | Format-Table -AutoSize
+
+```
+
+![](./media/powershell14.png)
 
 # Deleting failed Action Plans
 
-When update is stuck in GUI and won't let you attempt another run, following code might help you. It will delete failed action plans
+When update is stuck in GUI and won't let you attempt another run, it's important for Microsoft understand what happened.
+
+This operation should only be performed for development clusters (such as a lab environment) for getting familiar with Azure stack HCI where it is a considered reasonable to redeploy the cluster in the event a cluster issue is observed. 
+
+Microsoft recommends contacting support for issues related to failed updates if the issue cannot be resolved through retries or other remediation.  Proceed at your own risk.
+
+**WARNING:  Deleting action plan instances:**
+1.	**Abandons the update at the point of failure. This can leave the cluster in an inconsistent state.**
+2.	**Deletes history of the action plan execution (meaning you are deleting the best record of how the cluster got into the inconsistent state).**
+3.	**Prevents Microsoft support from being able to use telemetry to pinpoint the history of events on the cluster should you require assistance to repair your cluster.**
 
 ```PowerShell
 $ClusterName="AXClus02"

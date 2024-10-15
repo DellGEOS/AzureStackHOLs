@@ -1,8 +1,19 @@
 # Bitlocker Deep Dive
+<!-- TOC -->
+
+- [Bitlocker Deep Dive](#bitlocker-deep-dive)
+    - [About the lab](#about-the-lab)
+    - [Running "traditional" Bitlocker commands](#running-traditional-bitlocker-commands)
+    - [Exploring Azure Stack Bitlocker Commands](#exploring-azure-stack-bitlocker-commands)
+    - [Finding Bitlocker Recovery key in Active Directory](#finding-bitlocker-recovery-key-in-active-directory)
+    - [Backing up Recovery key to other AD objects](#backing-up-recovery-key-to-other-ad-objects)
+    - [Encrypting Volume](#encrypting-volume)
+
+<!-- /TOC -->
 
 ## About the lab
 
-In this lab you will learn about Bitlocker, how it evolved and how is controlled in Azure Stack HCI
+In this lab you will learn about Bitlocker, how it evolved and how is controlled in Azure Stack HCI. You will also learn how to encrypt volume and how to back up recovery key to other cluster nodes AD objects.
 
 [Official documentation](https://learn.microsoft.com/en-us/azure-stack/hci/manage/manage-bitlocker)
 

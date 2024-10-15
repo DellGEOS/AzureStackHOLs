@@ -86,6 +86,7 @@ Invoke-Command -ComputerName $ClusterName -ScriptBlock {
 
 
 To list volumes you can use following command. VolumeType can be either BootVolume or ClusterSharedVolume
+
 Note: you need to run command against all nodes as it pulls only volumes owned on that particular node
 
 ```PowerShell
@@ -117,7 +118,9 @@ Invoke-Command -ComputerName $ClusterName -ScriptBlock {
 
 ![](./media/powershell06.png)
 
-The most tricky part is to grab Recovery Password without logging into the node itsef. For that we'll need to pass credentials into the node using CredSSP. CredSSP slightly changed in Windows Server 2025, therefore we'll use registry to allow delegate credentials into the remote machine
+The most tricky part is to grab Recovery Password without logging into the node itsef. For that we'll need to pass credentials into the node using CredSSP as these credentials needs to be delegated to DC to pull the password itself. 
+
+CredSSP slightly changed in Windows Server 2025, therefore we'll use registry to allow delegate credentials into the remote machine
 
 ```PowerShell
     $ClusterName="AXClus02"
@@ -173,8 +176,6 @@ The most tricky part is to grab Recovery Password without logging into the node 
 ```
 
 ![](./media/powershell07.png)
-
-What happened is, that the information was pulled from Active Directory. That's why CredSSP was needed as these credentials were used to communicate with DC.
 
 ## Finding Bitlocker Recovery key in Active Directory
 
